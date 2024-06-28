@@ -4,7 +4,7 @@ Gooey is a pixel-focused immediate-mode GUI for games, written in Go for Ebiteng
 
 ## Why the name
 
-Next question
+Next question.
 
 ## How does it work?
 
@@ -12,29 +12,34 @@ Pretty easily:
 
 ```go
 
-type Game struct {
-    DebugDrawing bool
-}
+type Game struct {}
 
 func (g *Game) Init() {
-
     gooey.Init(640, 360)  // Create GUI backbuffer
-    gooey.SetFont(g.Font) // Set the font used for text rendering
-
 }
+
+func (g *Game) Update() error { return nil }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
-    gooey.Clear()
+    gooey.Clear() // Clear the GUI backbuffer.
 
-	g.ExampleSplit()
+	a := gooey.NewArea("root", 0, 0, 640, 360) // Define an area, with a given ID and X, Y, W, and H.
 
-	screen.DrawImage(gooey.Texture(), nil)
-
-	if g.DebugDrawing {
-		gooey.DrawDebug(screen)
+	// Draw and check to see if a button was pressed.
+	if a.UIButton("testButton", gooey.ButtonOptions{Label: "Test."}) { 
+		fmt.Println("The Test button was pressed.")
 	}
 
+	// Draw the result.
+	screen.DrawImage(gooey.Texture(), nil)
+
+}
+
+func (g *Game) Layout(w, h int) (int, int) { return 640, 360 }
+
+func main() {
+	if err := n.RunGame(&Game{}); err != nil { panic(err) }
 }
 
 ```

@@ -829,7 +829,7 @@ func (a *Area) HighlightControlBegin() {
 
 }
 
-func HighlightControlEnd() {
+func (a *Area) HighlightControlEnd() {
 
 	inputSelect = false
 
@@ -1029,6 +1029,7 @@ func (a *Area) UIButton(id any, options ButtonOptions) bool {
 
 		} else if inputSelect {
 			clicked = true
+			buttonColor = clickColor
 		}
 
 	}

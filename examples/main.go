@@ -126,7 +126,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(g.BGPattern, opt)
 
 	// Perform an example
-	g.ExampleMovingButtons()
+	g.ExampleButtonsAndTextbox()
 
 	screen.DrawImage(gooey.Texture(), nil)
 
@@ -137,11 +137,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) ExampleSimple() {
+
+	// Define an area for the GUI.
 	a := gooey.NewArea("root", 0, 0, 640, 360)
 
-	a.UIButton(0, gooey.ButtonOptions{
-		Label: "Test.",
-	})
+	// Check to see if a button was pressed.
+	if a.UIButton("testButton", gooey.ButtonOptions{Label: "Test."}) {
+		fmt.Println("The Test button was pressed.")
+	}
 }
 
 func (g *Game) ExampleMovingButtons() {
@@ -158,8 +161,6 @@ func (g *Game) ExampleMovingButtons() {
 			PaddingX: 8,
 		})
 	}
-
-	gooey.HighlightControlEnd()
 
 }
 
@@ -390,7 +391,7 @@ func (g *Game) ExampleButtonsAndTextbox() {
 	a := gooey.NewArea("buttons and textbox", 0, 0, 300, 300)
 
 	a.UITextbox(gooey.TextboxOptions{
-		Text: "Testing some long text out; it's pretty simple, and it should just work. You should be able to just type a lot and have it split... The core idea, anyway, is to make this as simple as possible. The text box stretches to fill the size of the text. It simply draws a simple textbox in one location with one size and lets you do what you're going to do.\n\nIt handles new-line characters as well.",
+		Text: "Testing some long text out; it's pretty simple, and it should just work. You should be able to just type a lot and have it split... The core idea, anyway, is to make this as simple as possible. It simply draws a simple textbox in one location with one size and lets you do what you're going to do.\n\nIt handles new-line characters as well.",
 		// Height:          256,
 		Ninepatch:       g.GUIImg.SubImage(image.Rect(0, 0, 24, 24)).(*ebiten.Image),
 		Padding:         8,
@@ -404,6 +405,9 @@ func (g *Game) ExampleButtonsAndTextbox() {
 	// Multiply blend mode
 	opt.Blend = MultiplyBlendMode
 	opt.ColorScale.Scale(1, 1.5, 2, 1)
+
+	// Call HighlightControlBegin to set up switching between UI elements using input (see the Game.Update() function).
+	a.HighlightControlBegin()
 
 	if a.UIButton("reset typewriter", gooey.ButtonOptions{
 		Label:                "Reset Typewriter",
@@ -429,7 +433,7 @@ func (g *Game) ExampleButtonsAndTextbox() {
 
 	a.HandleScrolling()
 
-	gooey.HighlightControlEnd()
+	a.HighlightControlEnd()
 
 }
 
