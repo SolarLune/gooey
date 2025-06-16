@@ -386,6 +386,13 @@ func (color Color) Value() float64 {
 	return math.Max(math.Max(r, g), b)
 }
 
+func (color Color) Inverted() Color {
+	color.R = 1 - color.R
+	color.G = 1 - color.G
+	color.B = 1 - color.B
+	return color
+}
+
 // func (color Color) HSV() (float64, float64, float64) {
 
 // 	r := float64(color.R)

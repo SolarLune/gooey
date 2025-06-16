@@ -43,3 +43,7 @@ func main() {
 }
 
 ```
+
+# TODO
+
+- Separate sizing of elements from layout system; it should just be positioning and the elements should have their own sizing...?

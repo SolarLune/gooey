@@ -1,7 +1,7 @@
 //kage:unit pixels
 package main
 
-var FGColor vec4
+var TextColor vec4
 
 var ShadowVector vec2
 var ShadowLength float
@@ -16,7 +16,7 @@ var OutlineColor vec4
 func Fragment(dstPos vec4, srcPos vec2, col vec4) vec4 {
 
     res := imageSrc0At(srcPos)
-    color := FGColor
+    color := TextColor
     transparency := res.a
     colorSet := false
     shadowSet := false
