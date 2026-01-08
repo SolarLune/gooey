@@ -54,11 +54,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Call `gooey.Begin()` at the beginning of the game frame.
 	gooey.Begin(gooey.UpdateSettings{
-		AcceptInput: ebiten.IsKeyPressed(ebiten.KeyX), // Indicate what input to use for the "accept" / "OK" button.
+		// Indicate what input to use for the "accept" / "OK" button.
+		AcceptInput: ebiten.IsKeyPressed(ebiten.KeyX),
 	})
-
-	// At the end of each frame, finish using `gooey`.
-	defer gooey.End()
 
 	// Define an area named "root" with its X, Y, W, and H.
 	area := gooey.NewLayout("root", 0, 0, 640, 360)
@@ -74,9 +72,14 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fmt.Println("The Test button was pressed.")
 	}
 
+	// You can also just create the button struct manually and fill its properties.
+
 	// Draw the result.
 	screen.Clear()
 	screen.DrawImage(gooey.Texture(), nil)
+
+	// At the end of each frame, finish using gooey.
+	gooey.End()
 
 	// And that's about it.
 
@@ -93,7 +96,7 @@ func main() {
 
 ```
 
-You can also reuse UI element structs and `With____` functions to make templates to work with, like so:
+You can also create UI element structs as bases and use their `With____` functions to make one-off adjustments to them. This creates a simple templating system to work with, like so:
 
 ```go
 
@@ -107,13 +110,15 @@ labelBase := gooey.UILabel{
 // Make a copy of `labelBase` with its text set to "First", and then add it to a layout.
 labelBase.WithText("First").AddTo(layout, "first label")
 
+// Same thing with "Second" for the text.
 labelBase.WithText("Second").AddTo(layout, "second label")
 
+// Same thing with "Third" for the text.
 labelBase.WithText("Third").AddTo(layout, "third label")
 
 ```
 
-See the `examples` folder for examples of more complex concepts.
+See the `examples` folder for more examples of more complex concepts.
 
 # What's in, what's not
 
@@ -143,8 +148,8 @@ Here's what's currently implemented and what has yet to be done:
     -   [x] Switching between mouse and input-based highlighting (press an input to switch to input, click to switch to mouse)
     -   [x] Hold input to repeat
     -   [x] Custom highlighting system
-    -   [ ] A more refined custom highlighting system
-    -   [ ] Layout highlighting system to control which layouts can receive focus at any given time (e.g. you might have multiple layouts to represent multiple menus that you walk through; think of an RPG with an inventory. You might have a menu with different options Items, Equipment, Key Items, etc. at the left, then a larger list of items; you should have to select a menu option to view the items under that categorization.)
+        -   [ ] More refinement here, maybe?
+    -   [ ] Layout highlighting system to control which layouts can receive focus at any given time (e.g. you might have multiple layouts represent multiple menus that you walk through. Think of an RPG with an inventory. You might have a menu with different options like Items, Equipment, Key Items, etc. at the left, and then after making that selection, a larger list of items that you scroll through. You should have to select a menu option to view the items under that categorization, and so this would require different "levels" of highlighting.)
 -   **Scrolling system**
     -   [x] Smooth linear automatic scrolling. When highlighting them, Gooey will scroll Layouts to them.
     -   [ ] Fix scrolling to be more reliable / smoother
