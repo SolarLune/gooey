@@ -392,8 +392,8 @@ func (l ArrangerFull) Arrange(drawCall DrawCall) DrawCall {
 type ArrangerGridDirection int
 
 const (
-	ArrangerGridOrderRowMajor = iota
-	ArrangerGridOrderColumnMajor
+	ArrangerGridOrderRowMajor    = iota // ArrangerGrid places elements horizontally first
+	ArrangerGridOrderColumnMajor        // ArrangerGrid places elements vertically first
 )
 
 // ArrangerGrid arranges UI elements in an easily extendible grid.
@@ -403,12 +403,12 @@ type ArrangerGrid struct {
 	OuterPadding   Vector2 // How many pixels should be given as padding between elements and the borders
 	ElementPadding Vector2 // How many pixels should be given as padding between elements and each other
 	ElementSize    Vector2 // The size of the Elements in the Grid in pixels
-	DivisionSize   int     // Number of elements per division (column or row).
+	ElementCount   int     // Number of elements per division (column or row).
 
 	/*
 	   Whether elements increase across (RowMajor) or vertically (ColumnMajor).
 
-	   As an example drawing eight (8) elements with a DivisionSize of 3:
+	   As an example, drawing eight (8) elements with an ElementNumber of 3:
 
 	   ArrangerGridOrderRowMajor:
 
@@ -480,8 +480,8 @@ func (l ArrangerGrid) WithElementSizeH(elementHeight float32) ArrangerGrid {
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithDivisionSize(divisionSize int) ArrangerGrid {
-	l.DivisionSize = divisionSize
+func (l ArrangerGrid) WithElementCount(count int) ArrangerGrid {
+	l.ElementCount = count
 	return l
 }
 
@@ -525,7 +525,7 @@ func (l ArrangerGrid) Arrange(drawCall DrawCall) DrawCall {
 	lx := float32(0)
 	ly := float32(0)
 
-	elementCount := l.DivisionSize
+	elementCount := l.ElementCount
 	if elementCount <= 1 {
 		elementCount = 1
 	}

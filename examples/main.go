@@ -339,7 +339,7 @@ func (g *Game) ExampleScrollableButtonList(screen *ebiten.Image) {
 
 	layout.SetArranger(gooey.ArrangerGrid{
 		ElementSize:       gooey.Vector2{64, 64},
-		DivisionSize:      3,
+		ElementCount:      3,
 		DivisionDirection: gooey.ArrangerGridOrderColumnMajor,
 	})
 
