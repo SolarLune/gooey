@@ -23,8 +23,8 @@ There's a few UI solutions for Ebitengine out there, but I felt like they were a
 Essentially, you:
 
 1. Call `gooey.Begin()`. Pass an argument indicating settings, including what inputs to check for UI traversal.
-1. Create a `gooey.Layout`. `Layouts` control where and how UI elements are rendered in a set rectangle. You can have many `Layouts` and can use an `Arranger` to customize how those elements draw to the screen.
-1. Create `gooey` UI elements and add them to the `Layout` using unique IDs. The IDs are how the UI elements' internal state is stored.
+1. Create `gooey.Layout`s. `Layouts` primarily contain UI elements in a set rectangle. You can give `Layout`s `Arranger`s to customize how and where UI elements draw to the screen.
+1. Create `gooey` UI elements and add them to `Layout`s using unique IDs. The IDs are how the UI elements' internal state is stored.
 1. Draw the GUI texture (`gooey.Texture()`) to the screen once finished.
 1. Call `gooey.End()`.
 
@@ -113,8 +113,6 @@ labelBase := gooey.UILabel{
 	LineSpacing: 1.25,
 }.WithPadding(16)
 
-///
-
 // Make a copy of `labelBase` with its text set to "First", and then add it to a layout.
 labelBase.WithText("First").AddTo(layout, "first label")
 
@@ -124,6 +122,33 @@ labelBase.WithText("Second").AddTo(layout, "second label")
 // Same thing with "Third" for the text.
 labelBase.WithText("Third").AddTo(layout, "third label")
 
+```
+
+You can also use UI elements' `Apply()` functions to make many changes at once. Each non-zero property is copied from the passed UIElement object. This can be easier to read (though this creates an interim struct in the process).
+
+```go
+
+labelBase := gooey.UILabel{
+	Anchor: gooey.AnchorCenterLeft,
+	LineSpacing: 1.25,
+}.WithPadding(16)
+
+overridden := labelBase.Apply(gooey.UILabel{
+	Text: "Hello!\nHello!",
+	LineSpacing: 1.9,
+	PaddingTop: 8,
+	PaddingBottom: 8,
+})
+
+// overridden:
+//
+// Text = "Hello\nHello!",
+// LineSpacing = 1.9,
+// PaddingTop = 8
+// PaddingBottom = 8
+// PaddingLeft = 16
+// PaddingRight = 16
+// Anchor = gooey.AnchorCenterLeft
 ```
 
 See the `examples` folder for more examples of more complex concepts.
