@@ -1,6 +1,14 @@
 # Gooey
 
-Gooey is a pixel-focused immediate-ish GUI for games, written in Go for Ebitengine.
+[![Go Reference](https://pkg.go.dev/badge/github.com/solarlune/gooey.svg)](https://pkg.go.dev/github.com/solarlune/gooey)
+
+![](https://private-user-images.githubusercontent.com/4733521/534349053-6b952d4c-fc31-49de-86da-78c8f5ab52cd.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgxMzM2NTgsIm5iZiI6MTc2ODEzMzM1OCwicGF0aCI6Ii80NzMzNTIxLzUzNDM0OTA1My02Yjk1MmQ0Yy1mYzMxLTQ5ZGUtODZkYS03OGM4ZjVhYjUyY2QuZ2lmP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI2MDExMSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNjAxMTFUMTIwOTE4WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MTZhZTRhNDY0MjMyMmFiMTk5MTgyZDNkZWU2ZmQwNGE1N2UzODU4NTI5ZWRiZjAyMzQ0MzRiMmFmMWZlN2QyZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.TOL6CE3qeeC-kIDKDEv1ZgPWmyhFYbjpo1rDroUG1FM)
+
+![](https://private-user-images.githubusercontent.com/4733521/534349193-f249626b-889c-4d96-8366-5b4c3b09190e.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgxMzM4NzgsIm5iZiI6MTc2ODEzMzU3OCwicGF0aCI6Ii80NzMzNTIxLzUzNDM0OTE5My1mMjQ5NjI2Yi04ODljLTRkOTYtODM2Ni01YjRjM2IwOTE5MGUuZ2lmP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI2MDExMSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNjAxMTFUMTIxMjU4WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MmViNzI1Mjg4OGI5MmY3MmJiNzUyOTAxNTc2NzJlZDA1ZTJlYzhiMWU5ODI3OGE1MTkyZmVmMDdjNWIwNzJmYiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.DhtbRrlEyyFLC-JwR6v-hUFm2q1X3_qp5dARLqS5TmU)
+
+![](https://private-user-images.githubusercontent.com/4733521/534349266-4bc86426-f3a8-4d1e-90f1-2ce018d3525a.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjgxMzM4NzgsIm5iZiI6MTc2ODEzMzU3OCwicGF0aCI6Ii80NzMzNTIxLzUzNDM0OTI2Ni00YmM4NjQyNi1mM2E4LTRkMWUtOTBmMS0yY2UwMThkMzUyNWEuZ2lmP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI2MDExMSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNjAxMTFUMTIxMjU4WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NjBiMWQyYmI3NTUwNTU0M2NmYmMyMTNjYjNhOTZjYThiYmQzMzRmNjA4NGEwMjA0NWUwNTgwM2VhOWZhNzdjYiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.4-GPB7lKapsxnkRq4dN_IsoPAXg0GP8UqjdmL9sQf4k)
+
+**Gooey** is a pixel-focused immediate mode-ish GUI framework for game development, written in Go for Ebitengine.
 
 ## Why the name?
 
@@ -15,7 +23,7 @@ There's a few UI solutions for Ebitengine out there, but I felt like they were a
 Essentially, you:
 
 1. Call `gooey.Begin()`. Pass an argument indicating settings, including what inputs to check for UI traversal.
-1. Create a `gooey.Layout`. `Layouts` control where and how UI elements are rendered in a set rectangle. You can have many `Layouts` and can use a `Layouter` to customize how those elements draw to the screen.
+1. Create a `gooey.Layout`. `Layouts` control where and how UI elements are rendered in a set rectangle. You can have many `Layouts` and can use an `Arranger` to customize how those elements draw to the screen.
 1. Create `gooey` UI elements and add them to the `Layout` using unique IDs. The IDs are how the UI elements' internal state is stored.
 1. Draw the GUI texture (`gooey.Texture()`) to the screen once finished.
 1. Call `gooey.End()`.
@@ -58,7 +66,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		AcceptInput: ebiten.IsKeyPressed(ebiten.KeyX),
 	})
 
-	// Define an area named "root" with its X, Y, W, and H.
+	// Define a new Layout named "root" positioned at 0, 0 with a size of 640x360.
 	area := gooey.NewLayout("root", 0, 0, 640, 360)
 
 	// Create a new button with some sane default values,
@@ -138,10 +146,10 @@ Here's what's currently implemented and what has yet to be done:
     -   [ ] Radio buttons
     -   [ ] Dropdown menu
 -   **Layout System**
-    -   [x] Default full layout system
-    -   [x] Layout modifier functions for UI elements
-    -   [x] Grid-based layout system
-    -   [x] Custom layout system
+    -   [x] Layout modifier functions for overriding specific UI elements
+    -   [x] Layouts allow different methods of positioning and scaling UI elements
+    -   [x] Grid-based element arrangement system
+    -   [x] Custom element arrangement system
 -   **Highlighting system**
     -   [x] Keyboard / gamepad / input-based highlighting
     -   [x] Mouse input
