@@ -97,37 +97,37 @@ func (r Rect) Split(percentage float32, verticalSplit bool) (leftTop, rightBotto
 
 }
 
-func (r Rect) AlignToRect(other Rect, anchor AnchorPosition, padding float32) Rect {
+func (r Rect) AlignToRect(other Rect, alignment Alignment, padding float32) Rect {
 
 	right := r.X + r.W
 	bottom := r.Y + r.H
 
-	switch anchor {
-	case AnchorTopLeft:
+	switch alignment {
+	case AlignmentTopLeft:
 		r.X = float32(other.X) + padding
 		r.Y = float32(other.Y) + padding
-	case AnchorTopCenter:
+	case AlignmentTopCenter:
 		r.X = float32(other.X) + float32(other.W)/2 - r.W/2
 		r.Y = float32(other.Y) + padding
-	case AnchorTopRight:
+	case AlignmentTopRight:
 		r.X = float32(right) - r.W - padding
 		r.Y = float32(other.Y) - padding
-	case AnchorCenterLeft:
+	case AlignmentCenterLeft:
 		r.X = float32(other.X) + padding
 		r.Y = float32(other.Y) + float32(other.H)/2 - r.H/2
-	case AnchorCenter:
+	case AlignmentCenterCenter:
 		r.X = float32(other.X) + float32(other.W)/2 - r.W/2
 		r.Y = float32(other.Y) + float32(other.H)/2 - r.H/2
-	case AnchorCenterRight:
+	case AlignmentCenterRight:
 		r.X = float32(right) - r.W - padding
 		r.Y = float32(other.Y) + float32(other.H)/2 - r.H/2
-	case AnchorBottomLeft:
+	case AlignmentBottomLeft:
 		r.X = float32(other.X) + padding
 		r.Y = float32(bottom) - r.H - padding
-	case AnchorBottomCenter:
+	case AlignmentBottomCenter:
 		r.X = float32(other.X) + float32(other.W)/2 - r.W/2
 		r.Y = float32(bottom) - r.H - padding
-	case AnchorBottomRight:
+	case AlignmentBottomRight:
 		r.X = float32(right) - r.W - padding
 		r.Y = float32(bottom) - r.H - padding
 		// default:
@@ -137,13 +137,13 @@ func (r Rect) AlignToRect(other Rect, anchor AnchorPosition, padding float32) Re
 	return r
 }
 
-func (r Rect) AlignToScreenbuffer(anchor AnchorPosition, padding float32) Rect {
-	return r.AlignToImage(screenBuffer, anchor, padding)
+func (r Rect) AlignToScreenbuffer(alignment Alignment, padding float32) Rect {
+	return r.AlignToImage(screenBuffer, alignment, padding)
 }
 
-func (r Rect) AlignToImage(img *ebiten.Image, anchor AnchorPosition, padding float32) Rect {
+func (r Rect) AlignToImage(img *ebiten.Image, alignment Alignment, padding float32) Rect {
 	bounds := img.Bounds()
-	return r.AlignToRect(Rect{float32(bounds.Min.X), float32(bounds.Min.Y), float32(bounds.Dx()), float32(bounds.Dy())}, anchor, padding)
+	return r.AlignToRect(Rect{float32(bounds.Min.X), float32(bounds.Min.Y), float32(bounds.Dx()), float32(bounds.Dy())}, alignment, padding)
 }
 
 func (r Rect) overlappingAxisX(other Rect) float32 {

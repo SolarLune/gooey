@@ -36,7 +36,7 @@ func (t TemplateField) IfCondition() string {
 		"uint64",
 		"float32",
 		"float64",
-		"AnchorPosition",
+		"Alignment",
 		"StretchMode",
 	}
 

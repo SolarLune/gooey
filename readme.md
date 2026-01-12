@@ -109,7 +109,7 @@ You can also create UI element structs as bases and use their `With____` functio
 ```go
 
 labelBase := gooey.UILabel{
-	Anchor: gooey.AnchorCenterLeft,
+	Alignment: gooey.AlignmentCenterLeft,
 	LineSpacing: 1.25,
 }.WithPadding(16)
 
@@ -129,7 +129,7 @@ You can also use UI elements' `Apply()` functions to make many changes at once. 
 ```go
 
 labelBase := gooey.UILabel{
-	Anchor: gooey.AnchorCenterLeft,
+	Alignment: gooey.AlignmentCenterLeft,
 	LineSpacing: 1.25,
 }.WithPadding(16)
 
@@ -142,13 +142,13 @@ overridden := labelBase.Apply(gooey.UILabel{
 
 // overridden:
 //
-// Text = "Hello\nHello!",
-// LineSpacing = 1.9,
+// Text = "Hello\nHello!"
+// LineSpacing = 1.9
 // PaddingTop = 8
 // PaddingBottom = 8
 // PaddingLeft = 16
 // PaddingRight = 16
-// Anchor = gooey.AnchorCenterLeft
+// Alignment = gooey.AlignmentCenterLeft
 ```
 
 See the `examples` folder for more examples of more complex concepts.
@@ -168,6 +168,7 @@ Here's what's currently implemented and what has yet to be done:
         -   [x] Typewriter effect
         -   [ ] Editable labels
     -   [x] Custom Draw Element
+    -   [x] Apply system to copy non-zero values to UI element structs
     -   [ ] Radio buttons
     -   [ ] Dropdown menu
 -   **Layout System**

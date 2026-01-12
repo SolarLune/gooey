@@ -186,7 +186,7 @@ func (g *Game) ExampleFlatSimple(screen *ebiten.Image) {
 	// Define an area for the GUI.
 	l := gooey.NewLayout("Flat Simple", 0, 0, 500, 200)
 
-	l.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	l.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	flat := gooey.UIColor{Color: gooey.NewColor(1, 0, 0, 1)}
 	flat.AddTo(l, "flat color")
@@ -202,7 +202,7 @@ func (g *Game) ExampleSimple(screen *ebiten.Image) {
 	// Define an area for the GUI.
 	layout := gooey.NewLayout("Example Simple Button", 0, 0, 500, 200)
 
-	layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	buttonOpt := gooey.NewUIButton().WithGraphics(
 
@@ -214,8 +214,8 @@ func (g *Game) ExampleSimple(screen *ebiten.Image) {
 			},
 
 			gooey.UILabel{
-				Text:   "Hello, there! Welcome to Gooey - it should be an easy solution for games made in Ebitengine.\n\n... Hopefully.",
-				Anchor: gooey.AnchorCenter,
+				Text:      "Hello, there! Welcome to Gooey - it should be an easy solution for games made in Ebitengine.\n\n... Hopefully.",
+				Alignment: gooey.AlignmentCenterCenter,
 			},
 		),
 	)
@@ -241,7 +241,7 @@ func (g *Game) ExampleButtonList(screen *ebiten.Image) {
 		ElementPadding: gooey.Vector2{8, 8},
 	})
 
-	layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	for i := 0; i < 4; i++ {
 
@@ -261,8 +261,8 @@ func (g *Game) ExampleButtonList(screen *ebiten.Image) {
 
 				// Label
 				gooey.UILabel{
-					Anchor: gooey.AnchorCenter,
-					Text:   "Button #" + strconv.Itoa(i),
+					Alignment: gooey.AlignmentCenterCenter,
+					Text:      "Button #" + strconv.Itoa(i),
 				},
 
 				// Icon
@@ -303,7 +303,7 @@ func (g *Game) ExampleButtonList(screen *ebiten.Image) {
 				Stretch:     gooey.StretchModeNinepatch,
 			},
 			gooey.UILabel{
-				Anchor: gooey.AnchorCenter,
+				Alignment: gooey.AlignmentCenterCenter,
 			},
 		),
 
@@ -343,7 +343,7 @@ func (g *Game) ExampleScrollableButtonList(screen *ebiten.Image) {
 		DivisionDirection: gooey.ArrangerGridOrderColumnMajor,
 	})
 
-	layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	for i := 0; i < 60; i++ {
 
@@ -359,8 +359,8 @@ func (g *Game) ExampleScrollableButtonList(screen *ebiten.Image) {
 
 				// Label
 				gooey.UILabel{
-					Anchor: gooey.AnchorCenter,
-					Text:   "#" + strconv.Itoa(i),
+					Alignment: gooey.AlignmentCenterCenter,
+					Text:      "#" + strconv.Itoa(i),
 				},
 			),
 		).AddTo(layout, "button_"+strconv.Itoa(i))
@@ -387,7 +387,7 @@ func (g *Game) ExampleCustomLayout(screen *ebiten.Image) {
 
 	// Define an area for the GUI.
 	layout := gooey.NewLayout("Example Custom Layout", 0, 0, 500, 200)
-	layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	totalButtons := 8
 	circleSize := 60.0
@@ -461,7 +461,7 @@ func (g *Game) ExampleSliders(screen *ebiten.Image) {
 
 	// Define an area for the GUI.
 	layout := gooey.NewLayout("Example Sliders", 0, 0, 500, 200)
-	layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	layout.SetCustomArranger(func(drawCall gooey.DrawCall) gooey.DrawCall {
 		sliderHeight := float32(32)
@@ -476,8 +476,8 @@ func (g *Game) ExampleSliders(screen *ebiten.Image) {
 		sliderObj.GeoM.Scale(0.5, 0.5)
 
 		labelOpt := gooey.UILabel{
-			Anchor: gooey.AnchorCenter,
-			Text:   "Huh?",
+			Alignment: gooey.AlignmentCenterCenter,
+			Text:      "Huh?",
 			// Move the label a bit lower; this could also be done with the
 			// DrawOptions property.
 			LayoutModifier: func(drawCall gooey.DrawCall) gooey.DrawCall {
@@ -526,7 +526,7 @@ func (g *Game) ExampleCustomDraw(screen *ebiten.Image) {
 	// layout := gooey.NewLayout("Example Custom Draw", 0, 0, 500, 200)
 	// layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
 
-	baseRect := gooey.Rect{0, 0, 500, 200}.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	baseRect := gooey.Rect{0, 0, 500, 200}.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	leftRect, rightRect := baseRect.Split(0.5, true)
 
@@ -564,7 +564,7 @@ func (g *Game) ExampleCustomDraw(screen *ebiten.Image) {
 
 func (g *Game) ExampleLayoutMap(screen *ebiten.Image) {
 
-	base := gooey.Rect{X: 0, Y: 0, W: 500, H: 200}.AlignToScreenbuffer(gooey.AnchorCenter, 0)
+	base := gooey.Rect{X: 0, Y: 0, W: 500, H: 200}.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	layouts := gooey.NewLayoutsFromStrings("Layout", base,
 		"aaaabbcccc",
@@ -586,8 +586,8 @@ func (g *Game) ExampleLayoutMap(screen *ebiten.Image) {
 
 				// Label
 				gooey.UILabel{
-					Anchor: gooey.AnchorCenter,
-					Text:   l.ID,
+					Alignment: gooey.AlignmentCenterCenter,
+					Text:      l.ID,
 				},
 			),
 		).AddTo(l, "button_"+l.ID) {

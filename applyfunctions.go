@@ -193,8 +193,8 @@ func (s UILabel) Apply(other UILabel) UILabel {
 		s.Text = other.Text
 	}
 
-	if other.Anchor != 0 {
-		s.Anchor = other.Anchor
+	if other.Alignment != 0 {
+		s.Alignment = other.Alignment
 	}
 
 	if other.DrawOptions != nil {

@@ -6,24 +6,24 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-// AnchorPosition sets where an element (like an icon) should be placed within another (say, a button).
-type AnchorPosition int
+// Alignment sets where an element (like an icon) should be placed within another (say, a button).
+type Alignment int
 
 const (
-	AnchorTopLeft AnchorPosition = iota
-	AnchorTopCenter
-	AnchorTopRight
-	AnchorCenterLeft
-	AnchorCenter
-	AnchorCenterRight
-	AnchorBottomLeft
-	AnchorBottomCenter
-	AnchorBottomRight
+	AlignmentTopLeft Alignment = iota
+	AlignmentTopCenter
+	AlignmentTopRight
+	AlignmentCenterLeft
+	AlignmentCenterCenter
+	AlignmentCenterRight
+	AlignmentBottomLeft
+	AlignmentBottomCenter
+	AlignmentBottomRight
 )
 
 type UILabel struct {
 	Text        string // Text to display in the Textbox.
-	Anchor      AnchorPosition
+	Alignment   Alignment
 	DrawOptions *text.DrawOptions
 
 	TypewriterIndex int // What index of the text to type out - <= 0 = all characters in Text, >0 = Text[ 0 : TypewriterIndex - 1 ].
@@ -61,8 +61,8 @@ func (l UILabel) WithLineSpacing(lineSpacing float32) UILabel {
 	return l
 }
 
-func (l UILabel) WithAnchor(anchor AnchorPosition) UILabel {
-	l.Anchor = anchor
+func (l UILabel) WithAlignment(alignment Alignment) UILabel {
+	l.Alignment = alignment
 	return l
 }
 
@@ -217,25 +217,25 @@ func (l UILabel) draw(dc DrawCall) {
 		lx := float64(0)
 		ly := float64(0)
 
-		if l.Anchor == AnchorTopCenter ||
-			l.Anchor == AnchorCenter ||
-			l.Anchor == AnchorBottomCenter {
+		if l.Alignment == AlignmentTopCenter ||
+			l.Alignment == AlignmentCenterCenter ||
+			l.Alignment == AlignmentBottomCenter {
 			lx = float64(dc.Rect.W/2) - (lineWidth / 2)
-		} else if l.Anchor == AnchorTopRight ||
-			l.Anchor == AnchorCenterRight ||
-			l.Anchor == AnchorBottomRight {
+		} else if l.Alignment == AlignmentTopRight ||
+			l.Alignment == AlignmentCenterRight ||
+			l.Alignment == AlignmentBottomRight {
 			lx = float64(dc.Rect.W) - lineWidth - float64(l.PaddingRight)
 		} else {
 			lx = float64(l.PaddingLeft)
 		}
 
-		if l.Anchor == AnchorCenterLeft ||
-			l.Anchor == AnchorCenter ||
-			l.Anchor == AnchorCenterRight {
+		if l.Alignment == AlignmentCenterLeft ||
+			l.Alignment == AlignmentCenterCenter ||
+			l.Alignment == AlignmentCenterRight {
 			ly = float64(dc.Rect.H/2) - (totalTextHeight / 2)
-		} else if l.Anchor == AnchorBottomLeft ||
-			l.Anchor == AnchorBottomCenter ||
-			l.Anchor == AnchorBottomRight {
+		} else if l.Alignment == AlignmentBottomLeft ||
+			l.Alignment == AlignmentBottomCenter ||
+			l.Alignment == AlignmentBottomRight {
 			ly = float64(dc.Rect.H) - totalTextHeight - float64(l.PaddingBottom)
 		} else {
 			ly = float64(l.PaddingTop)

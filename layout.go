@@ -1,7 +1,6 @@
 package gooey
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	"log"
@@ -196,62 +195,57 @@ func (l *Layout) String() string {
 // 	return &newLayout
 // }
 
-// AlignToScreenbuffer aligns an Area to the bounds of gooey's screenbuffer using an AnchorPosition constant,
+// AlignToScreenbuffer aligns an Area to the bounds of gooey's screenbuffer using an Alignment constant,
 // with the desired padding in pixels.
-func (l *Layout) AlignToScreenbuffer(anchor AnchorPosition, padding float32) {
-	l.Rect = l.Rect.AlignToScreenbuffer(anchor, padding)
+func (l *Layout) AlignToScreenbuffer(alignment Alignment, padding float32) {
+	l.Rect = l.Rect.AlignToScreenbuffer(alignment, padding)
 }
 
-// AlignToImage aligns an Area to the bounds of the image provided using an AnchorPosition constant,
+// AlignToImage aligns an Area to the bounds of the image provided using an Alignment constant,
 // with the desired padding in pixels.
-// Using any anchor positions that aren't supported will return an error.
-func (l *Layout) AlignToImage(img *ebiten.Image, anchor AnchorPosition, padding float32) {
-	l.Rect = l.Rect.AlignToImage(img, anchor, padding)
+func (l *Layout) AlignToImage(img *ebiten.Image, alignment Alignment, padding float32) {
+	l.Rect = l.Rect.AlignToImage(img, alignment, padding)
 }
 
-// AlignToLayout aligns a Layout to the bounds of the other Layout provided using an AnchorPosition constant,
+// AlignToLayout aligns a Layout to the bounds of the other Layout provided using an Alignment constant,
 // with the desired padding in pixels.
-// Using any anchor positions that aren't supported will return an error.
-func (l *Layout) AlignToLayout(other *Layout, anchor AnchorPosition, padding float32) error {
+func (l *Layout) AlignToLayout(other *Layout, alignment Alignment, padding float32) {
 
 	minX := other.Rect.X
 	minY := other.Rect.Y
 	maxX := other.Rect.X + other.Rect.W
 	maxY := other.Rect.Y + other.Rect.H
 
-	switch anchor {
-	case AnchorTopLeft:
+	switch alignment {
+	case AlignmentTopLeft:
 		l.Rect.X = float32(minX) + padding
 		l.Rect.Y = float32(minY) + padding
-	case AnchorTopCenter:
+	case AlignmentTopCenter:
 		l.Rect.X = float32(minX) + float32(other.Rect.W)/2 - l.Rect.W/2
 		l.Rect.Y = float32(minY) + padding
-	case AnchorTopRight:
+	case AlignmentTopRight:
 		l.Rect.X = float32(maxX) - l.Rect.W - padding
 		l.Rect.Y = float32(minY) - padding
-	case AnchorCenterLeft:
+	case AlignmentCenterLeft:
 		l.Rect.X = float32(minX) + padding
 		l.Rect.Y = float32(minY) + float32(other.Rect.H)/2 - l.Rect.H/2
-	case AnchorCenter:
+	case AlignmentCenterCenter:
 		l.Rect.X = float32(minX) + float32(other.Rect.W)/2 - l.Rect.W/2
 		l.Rect.Y = float32(minY) + float32(other.Rect.H)/2 - l.Rect.H/2
-	case AnchorCenterRight:
+	case AlignmentCenterRight:
 		l.Rect.X = float32(maxX) - l.Rect.W - padding
 		l.Rect.Y = float32(minY) + float32(other.Rect.H)/2 - l.Rect.H/2
-	case AnchorBottomLeft:
+	case AlignmentBottomLeft:
 		l.Rect.X = float32(minX) + padding
 		l.Rect.Y = float32(maxY) - l.Rect.H - padding
-	case AnchorBottomCenter:
+	case AlignmentBottomCenter:
 		l.Rect.X = float32(minX) + float32(other.Rect.W)/2 - l.Rect.W/2
 		l.Rect.Y = float32(maxY) - l.Rect.H - padding
-	case AnchorBottomRight:
+	case AlignmentBottomRight:
 		l.Rect.X = float32(maxX) - l.Rect.W - padding
 		l.Rect.Y = float32(maxY) - l.Rect.H - padding
-	default:
-		return errors.New("can't align area to an image using an unsupported alignment type")
 	}
 
-	return nil
 }
 
 func (l *Layout) subscreen() *ebiten.Image {
