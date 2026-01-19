@@ -76,6 +76,7 @@ func Init(w, h int) {
 
 	screenBuffer = ebiten.NewImage(w, h)
 	existingLayouts = existingLayouts[:0]
+	clear(layoutsFromStrings)
 
 }
 
@@ -457,6 +458,8 @@ func Begin(settings UpdateSettings) error {
 
 					}
 
+				} else {
+					layout.Offset.Y = 0
 				}
 
 				if layout.committedMaxRect.W > layout.Rect.W {
@@ -492,6 +495,8 @@ func Begin(settings UpdateSettings) error {
 
 					}
 
+				} else {
+					layout.Offset.X = 0
 				}
 
 				if scrollingY {

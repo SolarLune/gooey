@@ -22,22 +22,22 @@ const (
 )
 
 type UILabel struct {
-	Text        string // Text to display in the Textbox.
-	Alignment   Alignment
+	Text        string    // Text to display in the Textbox.
+	Alignment   Alignment // What alignment to use for the text within the textbox.
 	DrawOptions *text.DrawOptions
 
 	TypewriterIndex int // What index of the text to type out - <= 0 = all characters in Text, >0 = Text[ 0 : TypewriterIndex - 1 ].
 
-	LineSpacing  float32
-	MaxCharCount int
+	LineSpacing float32 // The line spacing for text in the textbox. If unset (0), then it defaults to the line spacing for the font.
 
-	PaddingTop    float32
-	PaddingLeft   float32
-	PaddingRight  float32
-	PaddingBottom float32
+	PaddingTop    float32 // The padding of the text in the label (in pixels).
+	PaddingLeft   float32 // The padding of the text in the label (in pixels).
+	PaddingRight  float32 // The padding of the text in the label (in pixels).
+	PaddingBottom float32 // The padding of the text in the label (in pixels).
+	NoWrap        bool    // When enabled, text will not wrap based off of bounds
 
-	LayoutModifier    ArrangeFunc
-	OverrideTextStyle TextStyle
+	ArrangerModifier  ArrangeFunc // A customizeable modifier that alters the location where the UI element is going to render.
+	OverrideTextStyle TextStyle   // A text style to override for the label; if unset, the default text style is used.
 
 	// When editable is true, you can click on the Textbox to begin editing and change the textbox's Text string.
 	// A known issue is that you can't manually change the text of an editable textbox after creation, so try not to do that.
@@ -74,13 +74,28 @@ func (l UILabel) WithPadding(padding float32) UILabel {
 	return l
 }
 
-func (l UILabel) WithTextStyle(textStyle TextStyle) UILabel {
-	l.OverrideTextStyle = textStyle
+func (l UILabel) WithPaddingLeft(padding float32) UILabel {
+	l.PaddingLeft = padding
 	return l
 }
 
-func (l UILabel) WithMaxCharCount(maxCharCount int) UILabel {
-	l.MaxCharCount = maxCharCount
+func (l UILabel) WithPaddingRight(padding float32) UILabel {
+	l.PaddingRight = padding
+	return l
+}
+
+func (l UILabel) WithPaddingTop(padding float32) UILabel {
+	l.PaddingTop = padding
+	return l
+}
+
+func (l UILabel) WithPaddingBottom(padding float32) UILabel {
+	l.PaddingBottom = padding
+	return l
+}
+
+func (l UILabel) WithTextStyle(textStyle TextStyle) UILabel {
+	l.OverrideTextStyle = textStyle
 	return l
 }
 
@@ -89,8 +104,8 @@ func (l UILabel) WithTypewriterIndex(typewriterIndex int) UILabel {
 	return l
 }
 
-func (l UILabel) WithLayoutModifier(modifier ArrangeFunc) UILabel {
-	l.LayoutModifier = modifier
+func (l UILabel) WithArrangerModifier(modifier ArrangeFunc) UILabel {
+	l.ArrangerModifier = modifier
 	return l
 }
 
@@ -98,11 +113,16 @@ func (l UILabel) highlightable() bool {
 	return false
 }
 
+func (l UILabel) WithNoWrap(noWrap bool) UILabel {
+	l.NoWrap = noWrap
+	return l
+}
+
 type LabelState struct {
 	targetText []rune
 }
 
-func (l UILabel) draw(dc DrawCall) {
+func (l UILabel) draw(dc *DrawCall) {
 
 	if dc.Instance.state == nil {
 		dc.Instance.state = &LabelState{}
@@ -112,8 +132,8 @@ func (l UILabel) draw(dc DrawCall) {
 
 	state.targetText = []rune(l.Text)
 
-	if l.LayoutModifier != nil {
-		dc = l.LayoutModifier(dc)
+	if l.ArrangerModifier != nil {
+		l.ArrangerModifier(dc)
 	}
 
 	ogTextStyle := textStyle
@@ -142,7 +162,7 @@ func (l UILabel) draw(dc DrawCall) {
 
 	allTextWidth, _ := text.Measure(l.Text, textStyle.Font, float64(l.LineSpacing))
 
-	if allTextWidth > float64(dc.Rect.W-l.PaddingLeft-l.PaddingRight) || strings.ContainsRune(string(state.targetText), '\n') {
+	if !l.NoWrap && (allTextWidth > float64(dc.Rect.W-l.PaddingLeft-l.PaddingRight) || strings.ContainsRune(string(state.targetText), '\n')) {
 
 		for _, s := range strings.Split(string(state.targetText), "\n") {
 
@@ -311,8 +331,8 @@ func (l UILabel) AddTo(layout *Layout, id string) {
 
 // 		state.targetText = []rune(options.Text)
 
-// 		if options.LayoutModifier != nil {
-// 			rect = options.LayoutModifier(elementIndex, rect)
+// 		if options.ArrangerModifier != nil {
+// 			rect = options.ArrangerModifier(elementIndex, rect)
 // 		}
 
 // 		state.area = area

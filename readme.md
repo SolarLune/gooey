@@ -189,3 +189,6 @@ Here's what's currently implemented and what has yet to be done:
     -   [ ] Fix scrolling to be more reliable / smoother
     -   [ ] Scrollbars
     -   [ ] Add custom scrolling
+-   **Debugging System**
+    -   [x] Debug display of Layouts
+    -   [ ] Debug display of elements drawn to Layouts

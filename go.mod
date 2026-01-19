@@ -3,7 +3,7 @@ module github.com/solarlune/gooey
 go 1.24.0
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.9.6
+	github.com/hajimehoshi/ebiten/v2 v2.9.7
 	golang.org/x/image v0.31.0
 )
 

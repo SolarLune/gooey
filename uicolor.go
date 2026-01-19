@@ -6,11 +6,11 @@ import (
 
 // UIColor presents a flat color to the screen.
 type UIColor struct {
-	LayoutModifier ArrangeFunc
-	Color          Color
+	ArrangerModifier ArrangeFunc // A customizeable modifier that alters the location where the UI element is going to render.
+	Color            Color       // The color used to draw a colored square to the screen.
 }
 
-func NewUIFlatColor() UIColor {
+func NewUIColor() UIColor {
 	return UIColor{}
 }
 
@@ -31,10 +31,10 @@ func (f UIColor) highlightable() bool {
 	return false
 }
 
-func (f UIColor) draw(dc DrawCall) {
+func (f UIColor) draw(dc *DrawCall) {
 
-	if f.LayoutModifier != nil {
-		dc = f.LayoutModifier(dc)
+	if f.ArrangerModifier != nil {
+		f.ArrangerModifier(dc)
 	}
 
 	vector.FillRect(dc.Instance.layout.subscreen(), dc.Rect.X, dc.Rect.Y, dc.Rect.W, dc.Rect.H, f.Color.Multiply(dc.Color).ToNRGBA64(), false)

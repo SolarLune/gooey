@@ -1,6 +1,8 @@
 package gooey
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 type Rect struct {
 	X, Y, W, H float32
@@ -8,6 +10,12 @@ type Rect struct {
 
 func (r Rect) IsZero() bool {
 	return r.X == 0 && r.Y == 0 && r.W == 0 && r.H == 0
+}
+
+func (r Rect) SetCenter(centerPos Vector2) Rect {
+	r.X = centerPos.X - (r.W / 2)
+	r.Y = centerPos.Y - (r.H / 2)
+	return r
 }
 
 func (r Rect) Center() Vector2 {
@@ -99,8 +107,8 @@ func (r Rect) Split(percentage float32, verticalSplit bool) (leftTop, rightBotto
 
 func (r Rect) AlignToRect(other Rect, alignment Alignment, padding float32) Rect {
 
-	right := r.X + r.W
-	bottom := r.Y + r.H
+	right := other.X + other.W
+	bottom := other.Y + other.H
 
 	switch alignment {
 	case AlignmentTopLeft:
@@ -135,6 +143,26 @@ func (r Rect) AlignToRect(other Rect, alignment Alignment, padding float32) Rect
 	}
 
 	return r
+}
+
+func (r Rect) ClampToRect(other Rect, padding float32) Rect {
+
+	if r.X < other.X+padding {
+		r.X = other.X + padding
+	}
+	if r.Right() > other.Right()-padding {
+		r = r.SetRight(other.Right() - padding)
+	}
+
+	if r.Y < other.Y+padding {
+		r.Y = other.Y + padding
+	}
+	if r.Bottom() > other.Bottom()-padding {
+		r = r.SetBottom(other.Bottom() - padding)
+	}
+
+	return r
+
 }
 
 func (r Rect) AlignToScreenbuffer(alignment Alignment, padding float32) Rect {

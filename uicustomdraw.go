@@ -4,19 +4,19 @@ import "github.com/hajimehoshi/ebiten/v2"
 
 // UICustomDraw represents a UI element that uses a custom draw function to draw within the space of a Layout.
 type UICustomDraw struct {
-	DrawFunc       func(screen *ebiten.Image, dc DrawCall)
-	LayoutModifier ArrangeFunc
-	Highlightable  bool
+	DrawFunc         func(screen *ebiten.Image, dc *DrawCall) // A customizeable function used to draw to the screen with a given draw call.
+	ArrangerModifier ArrangeFunc                              // A customizeable modifier that alters the location where the UI element is going to render.
+	Highlightable    bool                                     // Whether the custom draw element is highlightable or not.
 }
 
-func NewUICustomDraw(drawFunc func(screen *ebiten.Image, dc DrawCall)) UICustomDraw {
+func NewUICustomDraw(drawFunc func(screen *ebiten.Image, dc *DrawCall)) UICustomDraw {
 	return UICustomDraw{
 		DrawFunc: drawFunc,
 	}
 }
 
-func (d UICustomDraw) WithLayoutModifier(modifier ArrangeFunc) UICustomDraw {
-	d.LayoutModifier = modifier
+func (d UICustomDraw) WithArrangerModifier(modifier ArrangeFunc) UICustomDraw {
+	d.ArrangerModifier = modifier
 	return d
 }
 
@@ -25,10 +25,10 @@ func (d UICustomDraw) WithHighlightable(highlightable bool) UICustomDraw {
 	return d
 }
 
-func (d UICustomDraw) draw(dc DrawCall) {
+func (d UICustomDraw) draw(dc *DrawCall) {
 
-	if d.LayoutModifier != nil {
-		dc = d.LayoutModifier(dc)
+	if d.ArrangerModifier != nil {
+		d.ArrangerModifier(dc)
 	}
 
 	if d.DrawFunc != nil {

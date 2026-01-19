@@ -10,12 +10,12 @@ import (
 
 // ArrangeFunc is a function type used to take a draw call (rectangle, color, etc.),
 // and slice it up / reposition it as necessary.
-type ArrangeFunc func(drawCall DrawCall) DrawCall
+type ArrangeFunc func(drawCall *DrawCall)
 
-// Arranger is an object that has a function that is used to determine how and where
+// An Arranger is an object that has a function that is used to determine how and where
 // UI elements are rendered to the screen through a Layout.
 type Arranger interface {
-	Arrange(drawCall DrawCall) DrawCall
+	Arrange(drawCall *DrawCall)
 }
 
 // Layout represents an object that is used as a target for UI elements to draw to.
@@ -24,7 +24,7 @@ type Arranger interface {
 // to it.
 type Layout struct {
 	ID   string
-	Rect Rect
+	Rect Rect // Rect indicates where and how large the Layout is.
 
 	AutoScrollSpeed        float32 // How smoothly to automatically scroll to the highlighted UI element for layouts that draw beyond the Layout's boundary Rect to the right and downwards.
 	AutoScrollAcceleration float32 // The acceleration to the top speed (AutoScrollSpeed) for scrolling layouts when automatically scorolling.
@@ -56,10 +56,10 @@ func NewLayout(id string, x, y, w, h float32) *Layout {
 			}
 
 			visibleLayouts = append(visibleLayouts, l)
-			l.Reset()
 			for _, d := range l.existingUIElements.Data {
 				d.wasDrawn = false
 			}
+			l.Reset()
 			// l.uiDrawables = l.uiDrawables[:0]
 			return l
 		}
@@ -83,6 +83,8 @@ func NewLayoutFromRect(id string, rect Rect) *Layout {
 	return NewLayout(id, rect.X, rect.Y, rect.W, rect.H)
 }
 
+var layoutsFromStrings = map[string]map[rune]*Layout{}
+
 /*
 	 NewLayoutsFromStrings creates a new series of layouts from a Rect and strings indicating the positioning and relative
 	 proportions of each partition.
@@ -100,10 +102,19 @@ func NewLayoutFromRect(id string, rect Rect) *Layout {
 	 the base Rect (b), and the last at the bottom-left, extending from 0 to 75% of the way across (c).
 	 For an ID, they all have the same base ID (`idBase`) with their representative character
 	 appended (e.g. "idBase_a", "idBase_b", etc).
+
+	 Note that each Layout can only be initially created with this function once; after that, it just returns them.
+	 Also note that Layouts created through this method are cached by the idBase string, so the idBase string should not change
+	 for these specific Layouts.
 */
 func NewLayoutsFromStrings(idBase string, baseRect Rect, mappingStrings ...string) map[rune]*Layout {
 
-	// resultingLayouts = resultingLayouts[:0]
+	if results, ok := layoutsFromStrings[idBase]; ok {
+		for _, l := range results {
+			NewLayout(l.ID, 0, 0, 0, 0)
+		}
+		return results
+	}
 
 	resultingLayouts := map[rune]*Layout{}
 
@@ -178,6 +189,8 @@ func NewLayoutsFromStrings(idBase string, baseRect Rect, mappingStrings ...strin
 		}
 
 	}
+
+	layoutsFromStrings[idBase] = resultingLayouts
 
 	return resultingLayouts
 
@@ -266,10 +279,14 @@ func (l *Layout) Advance(delta int) {
 }
 
 // ItemRect returns the current item's rectangle when transformed by the Layout's layout function.
-func (l *Layout) ItemRect(drawCall DrawCall) DrawCall {
-	res := l.arranger.Arrange(drawCall)
-	res.Rect = res.Rect.MoveVec(l.Offset)
-	return res
+func (l *Layout) ItemRect(drawCall *DrawCall) {
+	l.arranger.Arrange(drawCall)
+	drawCall.Rect = drawCall.Rect.MoveVec(l.Offset)
+	// If the spacing rectangle isn't set, then set it to be whatever Rect is set to.
+	if drawCall.SpacingRect.IsZero() {
+		drawCall.SpacingRect = drawCall.Rect
+	}
+	drawCall.SpacingRect = drawCall.SpacingRect.MoveVec(l.Offset)
 }
 
 // Arranger returns the layout function for the Layout.
@@ -288,8 +305,8 @@ type customArranger struct {
 	ArrangeFunc ArrangeFunc
 }
 
-func (c customArranger) Arrange(drawcall DrawCall) DrawCall {
-	return c.ArrangeFunc(drawcall)
+func (c customArranger) Arrange(drawcall *DrawCall) {
+	c.ArrangeFunc(drawcall)
 }
 
 // Sets a custom layouting function for laying out elements in the Layout's rectangle.
@@ -299,7 +316,7 @@ func (l *Layout) SetCustomArranger(layoutFunc ArrangeFunc) *Layout {
 	})
 }
 
-func (l *Layout) add(id string, drawable UIElement, drawCall DrawCall) DrawCall {
+func (l *Layout) add(id string, drawable UIElement, drawCall *DrawCall) {
 
 	inst := l.existingUIElements.Add(id)
 
@@ -318,34 +335,36 @@ func (l *Layout) add(id string, drawable UIElement, drawCall DrawCall) DrawCall 
 	// Use the layout function to position / partition the starting rectangle
 	if !drawCall.rectSet {
 		drawCall.Rect = l.Rect
-		drawCall = l.ItemRect(drawCall)
+		l.ItemRect(drawCall)
 		drawCall.rectSet = true
 	}
 
 	inst.drawable.draw(drawCall) // the state is set here
 	inst.currentRect = drawCall.Rect
 
-	emptyRect := l.currentMaxRect.IsZero()
+	if drawCall.InfluenceScrolling {
 
-	if emptyRect || inst.currentRect.X < l.currentMaxRect.X {
-		l.currentMaxRect = l.currentMaxRect.ScaleLeftTo(inst.currentRect.X)
-	}
+		emptyRect := l.currentMaxRect.IsZero()
 
-	if emptyRect || inst.currentRect.Right() > l.currentMaxRect.Right() {
-		l.currentMaxRect = l.currentMaxRect.ScaleRightTo(inst.currentRect.Right())
-	}
+		if emptyRect || drawCall.SpacingRect.X < l.currentMaxRect.X {
+			l.currentMaxRect = l.currentMaxRect.ScaleLeftTo(drawCall.SpacingRect.X)
+		}
 
-	if emptyRect || inst.currentRect.Y < l.currentMaxRect.Y {
-		l.currentMaxRect = l.currentMaxRect.ScaleUpTo(inst.currentRect.Y)
-	}
+		if emptyRect || drawCall.SpacingRect.Right() > l.currentMaxRect.Right() {
+			l.currentMaxRect = l.currentMaxRect.ScaleRightTo(drawCall.SpacingRect.Right())
+		}
 
-	if emptyRect || inst.currentRect.Bottom() > l.currentMaxRect.Bottom() {
-		l.currentMaxRect = l.currentMaxRect.ScaleDownTo(inst.currentRect.Bottom())
+		if emptyRect || drawCall.SpacingRect.Y < l.currentMaxRect.Y {
+			l.currentMaxRect = l.currentMaxRect.ScaleUpTo(drawCall.SpacingRect.Y)
+		}
+
+		if emptyRect || drawCall.SpacingRect.Bottom() > l.currentMaxRect.Bottom() {
+			l.currentMaxRect = l.currentMaxRect.ScaleDownTo(drawCall.SpacingRect.Bottom())
+		}
+
 	}
 
 	l.Advance(1)
-
-	return drawCall
 
 }
 
@@ -370,41 +389,88 @@ func (l *Layout) UIElement(id string) *uiElementInstance {
 // ArrangerFull simply is used to place any UI elements over a Layout's entire Rect.
 // This is the default arrangement method for a new Layout.
 type ArrangerFull struct {
-	Padding Vector2
+	PaddingLeft   float32
+	PaddingRight  float32
+	PaddingTop    float32
+	PaddingBottom float32
 }
 
-func (l ArrangerFull) Arrange(drawCall DrawCall) DrawCall {
+func (a ArrangerFull) WithPaddingLeft(padding float32) ArrangerFull {
+	a.PaddingLeft = padding
+	return a
+}
 
-	drawCall.Rect.W -= l.Padding.X
-	drawCall.Rect.H -= l.Padding.Y
-	drawCall.Rect.X += l.Padding.X / 2
-	drawCall.Rect.Y += l.Padding.Y / 2
+func (a ArrangerFull) WithPaddingRight(padding float32) ArrangerFull {
+	a.PaddingRight = padding
+	return a
+}
 
-	return drawCall
+func (a ArrangerFull) WithPaddingTop(padding float32) ArrangerFull {
+	a.PaddingTop = padding
+	return a
+}
+
+func (a ArrangerFull) WithPaddingBottom(padding float32) ArrangerFull {
+	a.PaddingBottom = padding
+	return a
+}
+
+func (a ArrangerFull) WithPaddingHorizontal(padding float32) ArrangerFull {
+	a.PaddingLeft = padding
+	a.PaddingRight = padding
+	return a
+}
+
+func (a ArrangerFull) WithPaddingVertical(padding float32) ArrangerFull {
+	a.PaddingTop = padding
+	a.PaddingBottom = padding
+	return a
+}
+
+func (a ArrangerFull) WithPadding(padding float32) ArrangerFull {
+	a.PaddingLeft = padding
+	a.PaddingRight = padding
+	a.PaddingTop = padding
+	a.PaddingBottom = padding
+	return a
+}
+
+func (a ArrangerFull) Arrange(drawCall *DrawCall) {
+
+	drawCall.Rect.W -= a.PaddingRight + a.PaddingLeft
+	drawCall.Rect.H -= a.PaddingBottom + a.PaddingTop
+	drawCall.Rect.X += a.PaddingLeft
+	drawCall.Rect.Y += a.PaddingTop
+
 }
 
 type ArrangerGridDirection int
 
 const (
-	ArrangerGridOrderRowMajor    = iota // ArrangerGrid places elements horizontally first
-	ArrangerGridOrderColumnMajor        // ArrangerGrid places elements vertically first
+	ArrangeDirectionRow    ArrangerGridDirection = iota // ArrangerGrid places elements horizontally first
+	ArrangeDirectionColumn                              // ArrangerGrid places elements vertically first
 )
 
 // ArrangerGrid arranges UI elements in an easily extendible grid.
 // Can be used for single columns or rows by specifying the DivisionSize
 // to be 1 or below.
 type ArrangerGrid struct {
-	OuterPadding   Vector2 // How many pixels should be given as padding between elements and the borders
-	ElementPadding Vector2 // How many pixels should be given as padding between elements and each other
-	ElementSize    Vector2 // The size of the Elements in the Grid in pixels
-	ElementCount   int     // Number of elements per division (column or row).
+	OuterPaddingLeft   float32 // How many pixels should be given as padding between elements and the left border
+	OuterPaddingRight  float32 // How many pixels should be given as padding between elements and the right border
+	OuterPaddingTop    float32 // How many pixels should be given as padding between elements and the top border
+	OuterPaddingBottom float32 // How many pixels should be given as padding between elements and the bottom border
+
+	ElementPadding   Vector2 // How many pixels should be given as padding between elements
+	ElementSize      Vector2 // The size of the Elements in the Grid in pixels. If not set, it's determined from the total number of elements being drawn, arranging direction, and layout rectangle size.
+	ElementCount     int     // Number of elements per division (column or row).
+	NoCenterElements bool    // Center elements in the division if their combined size is less than the rectangle being arranged
 
 	/*
 	   Whether elements increase across (RowMajor) or vertically (ColumnMajor).
 
 	   As an example, drawing eight (8) elements with an ElementNumber of 3:
 
-	   ArrangerGridOrderRowMajor:
+	   ArrangeDirectionRow:
 
 	   [ 0 ] [ 1 ] [ 2 ]
 
@@ -412,7 +478,7 @@ type ArrangerGrid struct {
 
 	   [ 6 ] [ 7 ]
 
-	   ArrangerGridOrderColumnMajor:
+	   ArrangeDirectionColumn:
 
 	   [ 0 ] [ 3 ] [ 6 ]
 
@@ -420,127 +486,212 @@ type ArrangerGrid struct {
 
 	   [ 2 ] [ 5 ]
 	*/
-	DivisionDirection ArrangerGridDirection
+	Direction ArrangerGridDirection
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithElementPaddingW(paddingW float32) ArrangerGrid {
-	l.ElementPadding.X = paddingW
-	return l
+func (a ArrangerGrid) WithElementPaddingW(paddingW float32) ArrangerGrid {
+	a.ElementPadding.X = paddingW
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithElementPaddingH(paddingH float32) ArrangerGrid {
-	l.ElementPadding.Y = paddingH
-	return l
+func (a ArrangerGrid) WithElementPaddingH(paddingH float32) ArrangerGrid {
+	a.ElementPadding.Y = paddingH
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithElementPadding(padding float32) ArrangerGrid {
-	l.ElementPadding.X = padding
-	l.ElementPadding.Y = padding
-	return l
+func (a ArrangerGrid) WithElementPadding(padding float32) ArrangerGrid {
+	a.ElementPadding.X = padding
+	a.ElementPadding.Y = padding
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithOuterPaddingW(paddingW float32) ArrangerGrid {
-	l.OuterPadding.X = paddingW
-	return l
+func (a ArrangerGrid) WithElementPaddingVec(padding Vector2) ArrangerGrid {
+	a.ElementPadding = padding
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithOuterPaddingH(paddingH float32) ArrangerGrid {
-	l.OuterPadding.Y = paddingH
-	return l
+func (a ArrangerGrid) WithOuterPaddingLeft(padding float32) ArrangerGrid {
+	a.OuterPaddingLeft = padding
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithOuterPadding(padding float32) ArrangerGrid {
-	l.OuterPadding.X = padding
-	l.OuterPadding.Y = padding
-	return l
+func (a ArrangerGrid) WithOuterPaddingRight(padding float32) ArrangerGrid {
+	a.OuterPaddingRight = padding
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithElementSizeW(elementWidth float32) ArrangerGrid {
-	l.ElementSize.X = elementWidth
-	return l
+func (a ArrangerGrid) WithOuterPaddingTop(padding float32) ArrangerGrid {
+	a.OuterPaddingTop = padding
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithElementSizeH(elementHeight float32) ArrangerGrid {
-	l.ElementSize.Y = elementHeight
-	return l
+func (a ArrangerGrid) WithOuterPaddingBottom(padding float32) ArrangerGrid {
+	a.OuterPaddingBottom = padding
+	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (l ArrangerGrid) WithElementCount(count int) ArrangerGrid {
-	l.ElementCount = count
-	return l
+func (a ArrangerGrid) WithOuterPaddingHorizontal(padding float32) ArrangerGrid {
+	a.OuterPaddingLeft = padding
+	a.OuterPaddingRight = padding
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithOuterPaddingVertical(padding float32) ArrangerGrid {
+	a.OuterPaddingTop = padding
+	a.OuterPaddingBottom = padding
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithOuterPadding(padding float32) ArrangerGrid {
+	a.OuterPaddingTop = padding
+	a.OuterPaddingBottom = padding
+	a.OuterPaddingLeft = padding
+	a.OuterPaddingRight = padding
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithElementSize(w, h float32) ArrangerGrid {
+	a.ElementSize.X = w
+	a.ElementSize.Y = h
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithElementSizeVec(size Vector2) ArrangerGrid {
+	a.ElementSize = size
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithElementSizeW(elementWidth float32) ArrangerGrid {
+	a.ElementSize.X = elementWidth
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithElementSizeH(elementHeight float32) ArrangerGrid {
+	a.ElementSize.Y = elementHeight
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithElementCount(count int) ArrangerGrid {
+	a.ElementCount = count
+	return a
+}
+
+// Returns the ArrangerGrid with the given property set.
+func (a ArrangerGrid) WithNoCenterElements(noCenterElements bool) ArrangerGrid {
+	a.NoCenterElements = noCenterElements
+	return a
 }
 
 // Arranges UI elements given a DrawCall.
-func (l ArrangerGrid) Arrange(drawCall DrawCall) DrawCall {
+func (a ArrangerGrid) Arrange(drawCall *DrawCall) {
 
-	drawCall.Rect.W -= l.OuterPadding.X
-	drawCall.Rect.H -= l.OuterPadding.Y
+	drawCall.Rect.W -= a.OuterPaddingLeft + a.OuterPaddingRight
+	drawCall.Rect.H -= a.OuterPaddingTop + a.OuterPaddingBottom
 
-	cellWidth := drawCall.Rect.W / l.ElementSize.X
-	cellHeight := drawCall.Rect.H / l.ElementSize.Y
+	cellWidth := float32(0)
+	cellHeight := float32(0)
 
-	if l.ElementPadding.X < 0 {
-		l.ElementPadding.X = 0
+	if a.ElementCount <= 1 {
+		a.ElementCount = 1
 	}
 
-	if l.ElementPadding.Y < 0 {
-		l.ElementPadding.Y = 0
+	if a.ElementPadding.X < 0 {
+		a.ElementPadding.X = 0
 	}
 
-	if l.ElementSize.X <= 0 {
-		l.ElementSize.X = cellWidth
+	if a.ElementPadding.Y < 0 {
+		a.ElementPadding.Y = 0
 	}
 
-	if l.ElementSize.Y <= 0 {
-		l.ElementSize.Y = cellHeight
+	// If the size of each element is set, then go with that.
+	// Otherwise, figure it out from the rectangle's size
+	if a.ElementSize.X > 0 {
+		cellWidth = a.ElementSize.X
+	} else {
+		if a.Direction == ArrangeDirectionRow {
+			cellWidth = drawCall.Rect.W / float32(a.ElementCount)
+		} else {
+			cellWidth = drawCall.Rect.W
+		}
+		a.ElementSize.X = cellWidth
 	}
 
-	// Add in difference between element size and the cell size if it's been set
-	diffWidth := cellWidth - l.ElementSize.X
-	diffHeight := cellHeight - l.ElementSize.Y
+	if a.ElementSize.Y > 0 {
+		cellHeight = a.ElementSize.Y
+	} else {
+		if a.Direction == ArrangeDirectionColumn {
+			cellHeight = drawCall.Rect.H / float32(a.ElementCount)
+		} else {
+			cellHeight = drawCall.Rect.H
+		}
+		a.ElementSize.Y = cellHeight
 
-	if diffWidth < 0 {
-		diffWidth = 0
-	}
-
-	if diffHeight < 0 {
-		diffHeight = 0
 	}
 
 	lx := float32(0)
 	ly := float32(0)
 
-	elementCount := l.ElementCount
-	if elementCount <= 1 {
-		elementCount = 1
+	esx := a.ElementSize.X + a.ElementPadding.X
+	esy := a.ElementSize.Y + a.ElementPadding.Y
+
+	if a.Direction == ArrangeDirectionRow {
+		lx = float32(drawCall.ElementIndex%a.ElementCount) * esx
+		ly = float32(drawCall.ElementIndex/a.ElementCount) * esy
+	} else {
+		lx = float32(drawCall.ElementIndex/a.ElementCount) * esx
+		ly = float32(drawCall.ElementIndex%a.ElementCount) * esy
 	}
 
-	if l.DivisionDirection == ArrangerGridOrderRowMajor {
-		lx = float32(drawCall.ElementIndex%elementCount) * l.ElementSize.X
-		ly = float32(drawCall.ElementIndex/elementCount) * l.ElementSize.Y
-	} else {
-		lx = float32(drawCall.ElementIndex/elementCount) * l.ElementSize.X
-		ly = float32(drawCall.ElementIndex%elementCount) * l.ElementSize.Y
+	drawCall.SpacingRect = Rect{
+		X: drawCall.Rect.X + lx,
+		Y: drawCall.Rect.Y + ly,
+		W: a.ElementSize.X + a.OuterPaddingRight,
+		H: a.ElementSize.Y + a.OuterPaddingBottom,
+	}.
+		ScaleLeftTo(drawCall.Rect.X - a.OuterPaddingLeft).
+		ScaleUpTo(drawCall.Rect.Y - a.OuterPaddingTop)
+
+	// Center elements if their combined width or height is less than the rectangle size
+	// and they're being arranged horizontally or vertically
+	if !a.NoCenterElements {
+
+		if a.Direction == ArrangeDirectionRow {
+			totalWidth := float32(a.ElementCount)*esx - a.ElementPadding.X // Disregard padding on the right side
+			if totalWidth < drawCall.Rect.W {
+				lx += (drawCall.Rect.W - totalWidth) / 2
+			}
+		} else {
+			totalHeight := float32(a.ElementCount)*esy - a.ElementPadding.Y // Disregard padding on the bottomright side
+			if totalHeight < drawCall.Rect.H {
+				ly += (drawCall.Rect.H - totalHeight) / 2
+			}
+		}
+
 	}
 
 	elementRect := Rect{
-		X: drawCall.Rect.X + lx + (l.ElementPadding.X / 2) + (diffWidth / 2) + (l.OuterPadding.X / 2),
-		Y: drawCall.Rect.Y + ly + (l.ElementPadding.Y / 2) + (diffHeight / 2) + (l.OuterPadding.Y / 2),
-		W: l.ElementSize.X - l.ElementPadding.X,
-		H: l.ElementSize.Y - l.ElementPadding.Y,
+		X: drawCall.Rect.X + lx + a.OuterPaddingLeft,
+		Y: drawCall.Rect.Y + ly + a.OuterPaddingTop,
+		W: a.ElementSize.X,
+		H: a.ElementSize.Y,
 	}
 
 	drawCall.Rect = elementRect
-
-	return drawCall
 
 }

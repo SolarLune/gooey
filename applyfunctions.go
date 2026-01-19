@@ -27,8 +27,8 @@ func (s UIButton) Apply(other UIButton) UIButton {
 		s.Disabled = other.Disabled
 	}
 
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if other.Graphics != nil {
@@ -46,8 +46,8 @@ func (s UIButton) Apply(other UIButton) UIButton {
 // object into the calling object.
 func (s UICollection) Apply(other UICollection) UICollection {
 	
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if other.Elements != nil {
@@ -61,8 +61,8 @@ func (s UICollection) Apply(other UICollection) UICollection {
 // object into the calling object.
 func (s UIColor) Apply(other UIColor) UIColor {
 	
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if !other.Color.IsZero() {
@@ -80,8 +80,8 @@ func (s UICustomDraw) Apply(other UICustomDraw) UICustomDraw {
 		s.DrawFunc = other.DrawFunc
 	}
 
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if other.Highlightable {
@@ -131,8 +131,8 @@ func (s UICycleButton) Apply(other UICycleButton) UICycleButton {
 		s.ClickZoneSize = other.ClickZoneSize
 	}
 
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if other.Disabled {
@@ -174,8 +174,8 @@ func (s UIImage) Apply(other UIImage) UIImage {
 		s.DrawOptions = other.DrawOptions
 	}
 
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if other.Stretch != 0 {
@@ -209,10 +209,6 @@ func (s UILabel) Apply(other UILabel) UILabel {
 		s.LineSpacing = other.LineSpacing
 	}
 
-	if other.MaxCharCount != 0 {
-		s.MaxCharCount = other.MaxCharCount
-	}
-
 	if other.PaddingTop != 0 {
 		s.PaddingTop = other.PaddingTop
 	}
@@ -229,8 +225,12 @@ func (s UILabel) Apply(other UILabel) UILabel {
 		s.PaddingBottom = other.PaddingBottom
 	}
 
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.NoWrap {
+		s.NoWrap = other.NoWrap
+	}
+
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if !other.OverrideTextStyle.IsZero() {
@@ -252,8 +252,8 @@ func (s UISlider) Apply(other UISlider) UISlider {
 		s.SliderGraphics = other.SliderGraphics
 	}
 
-	if other.LayoutModifier != nil {
-		s.LayoutModifier = other.LayoutModifier
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
 	}
 
 	if !other.BaseColor.IsZero() {
@@ -268,10 +268,6 @@ func (s UISlider) Apply(other UISlider) UISlider {
 		s.DisabledColor = other.DisabledColor
 	}
 
-	if other.ClickPadding != 0 {
-		s.ClickPadding = other.ClickPadding
-	}
-
 	if other.SliderHeadLerpPercentage != 0 {
 		s.SliderHeadLerpPercentage = other.SliderHeadLerpPercentage
 	}
@@ -282,6 +278,10 @@ func (s UISlider) Apply(other UISlider) UISlider {
 
 	if other.Disabled {
 		s.Disabled = other.Disabled
+	}
+
+	if other.Pointer != nil {
+		s.Pointer = other.Pointer
 	}
 
 	return s

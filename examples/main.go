@@ -81,6 +81,17 @@ func NewGame() *Game {
 	gooey.SetDefaultTextStyle(style)
 	// gooey.SetFont(g.Font) // Set the font used for text
 
+	g.Examples = []func(screen *ebiten.Image){
+		g.ExampleColor,
+		g.ExampleButton,
+		g.ExampleButtonList,
+		g.ExampleScrollableButtonGrid,
+		g.ExampleCustomLayout,
+		g.ExampleSliders,
+		g.ExampleCustomDraw,
+		g.ExampleLayoutMap,
+	}
+
 	return g
 }
 
@@ -116,17 +127,6 @@ func (g *Game) Update() error {
 		StartProfiling()
 	}
 
-	g.Examples = []func(screen *ebiten.Image){
-		g.ExampleFlatSimple,
-		g.ExampleSimple,
-		g.ExampleButtonList,
-		g.ExampleScrollableButtonList,
-		g.ExampleCustomLayout,
-		g.ExampleSliders,
-		g.ExampleCustomDraw,
-		g.ExampleLayoutMap,
-	}
-
 	if g.ExampleIndex < 0 {
 		g.ExampleIndex += len(g.Examples)
 	} else if g.ExampleIndex >= len(g.Examples) {
@@ -141,6 +141,8 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
+	// To use gooey, just call gooey.Begin() / gooey.End() and issue UIElement calls in-between.
+	// That is done in the example functions.
 	gooey.Begin(
 		gooey.UpdateSettings{
 			RightInput: ebiten.IsKeyPressed(ebiten.KeyRight),
@@ -169,6 +171,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	opt.ColorScale.Scale(0.2, 0.2, 0.2, 1)
 	screen.DrawImage(g.RockTexture, opt)
 
+	// Here is where the gooey UI elements are created and logic is done.
 	g.Examples[g.ExampleIndex](screen)
 
 	screen.DrawImage(gooey.Texture(), nil)
@@ -181,13 +184,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 }
 
-func (g *Game) ExampleFlatSimple(screen *ebiten.Image) {
+func (g *Game) ExampleColor(screen *ebiten.Image) {
 
-	// Define an area for the GUI.
-	l := gooey.NewLayout("Flat Simple", 0, 0, 500, 200)
+	// Define a layout for the GUI.
+	l := gooey.NewLayout("Simple Color", 0, 0, 500, 200)
 
+	// Center it.
 	l.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
+	// Create a Color UI element and add it to the layout.
 	flat := gooey.UIColor{Color: gooey.NewColor(1, 0, 0, 1)}
 	flat.AddTo(l, "flat color")
 
@@ -197,9 +202,9 @@ func (g *Game) ExampleFlatSimple(screen *ebiten.Image) {
 
 }
 
-func (g *Game) ExampleSimple(screen *ebiten.Image) {
+func (g *Game) ExampleButton(screen *ebiten.Image) {
 
-	// Define an area for the GUI.
+	// Define a layout for the GUI.
 	layout := gooey.NewLayout("Example Simple Button", 0, 0, 500, 200)
 
 	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
@@ -233,11 +238,11 @@ func (g *Game) ExampleSimple(screen *ebiten.Image) {
 
 func (g *Game) ExampleButtonList(screen *ebiten.Image) {
 
-	// Define an area for the GUI.
+	// Define a layout for the GUI.
 	layout := gooey.NewLayout("Example Button List", 0, 0, 500, 200)
 
 	layout.SetArranger(gooey.ArrangerGrid{
-		ElementSize:    gooey.Vector2{500, 32},
+		ElementSize:    gooey.Vector2{500, 24},
 		ElementPadding: gooey.Vector2{8, 8},
 	})
 
@@ -325,11 +330,11 @@ func (g *Game) ExampleButtonList(screen *ebiten.Image) {
 	change the positioning and size of UI elements,
 	which will stretch to fit. In this example, a grid
 	layout function is used to create a vertical list
-	of buttons. (Yes, highlighting is slightly buggy.)`)
+	of buttons.`)
 
 }
 
-func (g *Game) ExampleScrollableButtonList(screen *ebiten.Image) {
+func (g *Game) ExampleScrollableButtonGrid(screen *ebiten.Image) {
 
 	// Layouts will be scrollable automatically if they extend horizontally to the right
 	// or vertically to the bottom beyond the Layout's Rect.
@@ -338,9 +343,10 @@ func (g *Game) ExampleScrollableButtonList(screen *ebiten.Image) {
 	layout := gooey.NewLayout("Example Scrollable Button List", 0, 0, 500, 200)
 
 	layout.SetArranger(gooey.ArrangerGrid{
-		ElementSize:       gooey.Vector2{64, 64},
-		ElementCount:      3,
-		DivisionDirection: gooey.ArrangerGridOrderColumnMajor,
+		ElementSize:    gooey.Vector2{64, 64},
+		ElementPadding: gooey.Vector2{4, 4},
+		ElementCount:   6,
+		// NoCenterElements:   true,
 	})
 
 	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
@@ -385,14 +391,14 @@ func (g *Game) ExampleScrollableButtonList(screen *ebiten.Image) {
 
 func (g *Game) ExampleCustomLayout(screen *ebiten.Image) {
 
-	// Define an area for the GUI.
+	// Define a layout for the GUI.
 	layout := gooey.NewLayout("Example Custom Layout", 0, 0, 500, 200)
 	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	totalButtons := 8
 	circleSize := 60.0
 
-	layout.SetCustomArranger(func(drawCall gooey.DrawCall) gooey.DrawCall {
+	layout.SetCustomArranger(func(drawCall *gooey.DrawCall) {
 
 		buttonSize := float32(32)
 
@@ -414,7 +420,6 @@ func (g *Game) ExampleCustomLayout(screen *ebiten.Image) {
 
 		drawCall.Rect = buttonRect
 
-		return drawCall
 	})
 
 	highlightingOrder := []string{}
@@ -459,15 +464,14 @@ func (g *Game) ExampleCustomLayout(screen *ebiten.Image) {
 
 func (g *Game) ExampleSliders(screen *ebiten.Image) {
 
-	// Define an area for the GUI.
+	// Define a layout for the GUI.
 	layout := gooey.NewLayout("Example Sliders", 0, 0, 500, 200)
 	layout.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
-	layout.SetCustomArranger(func(drawCall gooey.DrawCall) gooey.DrawCall {
+	layout.SetCustomArranger(func(drawCall *gooey.DrawCall) {
 		sliderHeight := float32(32)
 		sliderRect := gooey.Rect{drawCall.Rect.X, drawCall.Rect.Y + (float32(drawCall.ElementIndex) * sliderHeight), drawCall.Rect.W, sliderHeight}
 		drawCall.Rect = sliderRect
-		return drawCall
 	})
 
 	for i := 0; i < 6; i++ {
@@ -480,9 +484,8 @@ func (g *Game) ExampleSliders(screen *ebiten.Image) {
 			Text:      "Huh?",
 			// Move the label a bit lower; this could also be done with the
 			// DrawOptions property.
-			LayoutModifier: func(drawCall gooey.DrawCall) gooey.DrawCall {
+			ArrangerModifier: func(drawCall *gooey.DrawCall) {
 				drawCall.Rect = drawCall.Rect.Move(0, 16)
-				return drawCall
 			},
 		}
 
@@ -522,7 +525,7 @@ func (g *Game) ExampleSliders(screen *ebiten.Image) {
 
 func (g *Game) ExampleCustomDraw(screen *ebiten.Image) {
 
-	// Define an area for the GUI.
+	// Define a layout for the GUI.
 	// layout := gooey.NewLayout("Example Custom Draw", 0, 0, 500, 200)
 	// layout.AlignToScreenbuffer(gooey.AnchorCenter, 0)
 
@@ -538,7 +541,7 @@ func (g *Game) ExampleCustomDraw(screen *ebiten.Image) {
 	colorShift := 0.0
 
 	circle := gooey.UICustomDraw{
-		DrawFunc: func(screen *ebiten.Image, dc gooey.DrawCall) {
+		DrawFunc: func(screen *ebiten.Image, dc *gooey.DrawCall) {
 			center := dc.Rect.Center()
 			radius := 16 + (float32(math.Sin(g.Frame*math.Pi)) * 8)
 			color := gooey.NewColorFromHSV((g.Frame+colorShift)/10, 1, 1).ToNRGBA64()

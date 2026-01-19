@@ -20,7 +20,7 @@ type UICycleButton struct {
 	GraphicsButtonDisabledColor  Color   // The color to draw for the next and previous graphics buttons when they're disabled
 	ClickZoneSize                float32 // The size of the buttons; if <= 0, it defaults to the minimum of the button's width or height
 
-	LayoutModifier ArrangeFunc // A customizeable layout-modifying function that alters where the UI element draws.
+	ArrangerModifier ArrangeFunc // A customizeable layout-modifying function that alters where the UI element draws.
 
 	Disabled bool // Whether the button is disabled or not; when disabled, it cannot be pressed or highlighted.
 
@@ -81,8 +81,8 @@ func (b UICycleButton) WithDisabled(disabled bool) UICycleButton {
 	return b
 }
 
-func (b UICycleButton) WithLayoutModifier(modifier ArrangeFunc) UICycleButton {
-	b.LayoutModifier = modifier
+func (b UICycleButton) WithArrangerModifier(modifier ArrangeFunc) UICycleButton {
+	b.ArrangerModifier = modifier
 	return b
 }
 
@@ -140,10 +140,10 @@ func (b UICycleButton) WithPointer(pointer *int) UICycleButton {
 // 	return b
 // }
 
-func (b UICycleButton) draw(dc DrawCall) {
+func (b UICycleButton) draw(dc *DrawCall) {
 
-	if b.LayoutModifier != nil {
-		dc = b.LayoutModifier(dc)
+	if b.ArrangerModifier != nil {
+		b.ArrangerModifier(dc)
 	}
 
 	if dc.Instance.state == nil {
@@ -227,14 +227,14 @@ func (b UICycleButton) draw(dc DrawCall) {
 	dc.Color = dc.Color.MultiplyRGBA(color.ToFloat32s())
 	if b.GraphicsBody != nil {
 		setTextForAllLabelsInGraphic(b.GraphicsBody, txt)
-		dc.Instance.layout.add(dc.Instance.id+"__gfx_body", b.GraphicsBody, dc)
+		dc.Instance.layout.add(dc.Instance.id+"__gfx_body", b.GraphicsBody, dc.Clone())
 		dc.Instance.layout.Advance(-1)
 	}
 
 	if b.GraphicsButtonPrevious != nil {
 		setTextForAllLabelsInGraphic(b.GraphicsButtonPrevious, txt)
 
-		newDrawcall := dc
+		newDrawcall := dc.Clone()
 
 		newDrawcall.Rect.W = min(newDrawcall.Rect.W, newDrawcall.Rect.H)
 		newDrawcall.Rect.H = newDrawcall.Rect.W
@@ -283,7 +283,7 @@ func (b UICycleButton) draw(dc DrawCall) {
 	if b.GraphicsButtonNext != nil {
 		setTextForAllLabelsInGraphic(b.GraphicsButtonPrevious, txt)
 
-		newDrawcall := dc
+		newDrawcall := dc.Clone()
 
 		newDrawcall.Rect.W = min(newDrawcall.Rect.W, newDrawcall.Rect.H)
 		newDrawcall.Rect.H = newDrawcall.Rect.W
@@ -347,7 +347,8 @@ func (b UICycleButton) highlightable() bool {
 // The id string should be unique and is used to identify and keep track of its location and internal state, if it saves any such state.
 func (b UICycleButton) AddTo(layout *Layout, id string) int {
 
-	dc := layout.add(id, b, layout.newDefaultDrawcall())
+	dc := layout.newDefaultDrawcall()
+	layout.add(id, b, dc)
 	return dc.Instance.state.(*UICycleButtonState).selected
 }
 

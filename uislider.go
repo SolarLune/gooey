@@ -2,26 +2,28 @@ package gooey
 
 import (
 	"math"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type UISlider struct {
-	Background     UIElement
-	SliderGraphics UIElement
-	LayoutModifier ArrangeFunc
+	Background       UIElement   // A UI element to use for drawing the background of the slider.
+	SliderGraphics   UIElement   // A UI element to use for drawing the head of the slider.
+	ArrangerModifier ArrangeFunc // A customizeable modifier that alters the location where the UI element is going to render.
 
-	BaseColor                Color
-	HighlightColor           Color
-	DisabledColor            Color
-	ClickPadding             float32
-	SliderHeadLerpPercentage float32
+	BaseColor                Color   // The color to use for the slider by default.
+	HighlightColor           Color   // The color to use for the slider when it is highlighted.
+	DisabledColor            Color   // The color to use for the slider when it is disabled.
+	SliderHeadLerpPercentage float32 // What percentage to lerp the slider between.
+	StepSize                 float32 // How coarse in percentages the slider is. Defaults to 0.1 (10%).
 
-	StepSize float32
+	Disabled bool // If the slider is disabled.
 
-	Disabled bool
+	Pointer *float32 // A pointer to a variable to set for the slider to represent.
 }
 
+// Creates a new UISlider with sensible default values.
 func NewUISlider() UISlider {
 	return UISlider{
 		SliderHeadLerpPercentage: 0.1,
@@ -63,8 +65,20 @@ func (s UISlider) WithDisabled(disabled bool) UISlider {
 	return s
 }
 
+func (s UISlider) WithPointer(pointer *float32) UISlider {
+	s.Pointer = pointer
+	return s
+}
+
 func (s UISlider) highlightable() bool {
 	return !s.Disabled
+}
+
+// Sets the text of any and all labels already attached to the Slider's graphics or background to the given string.
+func (s UISlider) WithText(txt string) UISlider {
+	setTextForAllLabelsInGraphic(s.SliderGraphics, txt)
+	setTextForAllLabelsInGraphic(s.Background, txt)
+	return s
 }
 
 type SliderState struct {
@@ -76,21 +90,35 @@ type SliderState struct {
 	disabled           bool
 }
 
+// Returns the percentage of the slider as a string.
+// start and end are the starting and ending value of the percentage (so while it's 0 to 1 for the slider itself,
+// it ranges from, say, 1 to 1000 in the string).
+// precision is the number of spaces the value will have in the returned string.
+func (s *SliderState) PercentageAsString(start, end float32, precision int) string {
+	v := start + (s.Percentage * (end - start))
+	return strconv.FormatFloat(float64(v), 'f', precision, 32)
+}
+
 func (s *SliderState) SliderHeadPosition() Vector2 {
 	return s.sliderHeadPosition
 }
 
-func (s UISlider) draw(dc DrawCall) {
+func (s UISlider) draw(dc *DrawCall) {
 
 	if dc.Instance.state == nil {
-		dc.Instance.state = &SliderState{}
+		state := &SliderState{}
+		if s.Pointer != nil {
+			state.Percentage = *s.Pointer
+			state.visualPercentage = state.Percentage
+		}
+		dc.Instance.state = state
 	}
 
 	state := dc.Instance.state.(*SliderState)
 	state.disabled = s.Disabled
 
-	if s.LayoutModifier != nil {
-		dc = s.LayoutModifier(dc)
+	if s.ArrangerModifier != nil {
+		s.ArrangerModifier(dc)
 	}
 
 	stepSize := s.StepSize
@@ -169,7 +197,6 @@ func (s UISlider) draw(dc DrawCall) {
 		clickX, clickY := ebiten.CursorPosition()
 		percX := (float32(clickX) - dc.Rect.X) / dc.Rect.W
 		percY := (float32(clickY) - dc.Rect.Y) / dc.Rect.H
-		// percY := (float32(clickY) - (rect.Y + options.ClickPadding)) / (rect.H - (options.ClickPadding / 2))
 
 		if horizontal {
 			state.Percentage = percX
@@ -183,14 +210,20 @@ func (s UISlider) draw(dc DrawCall) {
 
 	state.Percentage = clamp(state.Percentage, 0, 1)
 
+	if s.Pointer != nil {
+		*s.Pointer = state.Percentage
+	}
+
 	dc.Color = dc.Color.MultiplyRGBA(baseColor.ToFloat32s())
 
 	if s.Background != nil {
-		dc.Instance.layout.add(dc.Instance.id+"__bg", s.Background, dc)
+		dc.Instance.layout.add(dc.Instance.id+"__bg", s.Background, dc.Clone())
 		dc.Instance.layout.Advance(-1)
 	}
 
 	if s.SliderGraphics != nil {
+
+		newDC := dc.Clone()
 
 		if s.SliderHeadLerpPercentage <= 0 {
 			state.visualPercentage = state.Percentage
@@ -198,22 +231,22 @@ func (s UISlider) draw(dc DrawCall) {
 			state.visualPercentage += (state.Percentage - state.visualPercentage) * s.SliderHeadLerpPercentage
 		}
 
-		sliderRect := dc.Rect
-		sliderRect.W = min(dc.Rect.W, dc.Rect.H)
+		sliderRect := newDC.Rect
+		sliderRect.W = min(newDC.Rect.W, newDC.Rect.H)
 		sliderRect.H = sliderRect.W
 
 		if horizontal {
-			sliderRect.X = dc.Rect.X + (state.visualPercentage * (dc.Rect.W - sliderRect.W))
+			sliderRect.X = newDC.Rect.X + (state.visualPercentage * (newDC.Rect.W - sliderRect.W))
 		} else {
-			sliderRect.Y = dc.Rect.Y + (state.visualPercentage * (dc.Rect.H - sliderRect.H))
+			sliderRect.Y = newDC.Rect.Y + (state.visualPercentage * (newDC.Rect.H - sliderRect.H))
 		}
 
 		state.sliderHeadPosition = sliderRect.Center()
 
-		dc.Rect = sliderRect
+		newDC.Rect = sliderRect
 
-		dc.Instance.layout.add(dc.Instance.id+"__sliderobj", s.SliderGraphics, dc)
-		dc.Instance.layout.Advance(-1)
+		newDC.Instance.layout.add(newDC.Instance.id+"__sliderobj", s.SliderGraphics, newDC)
+		newDC.Instance.layout.Advance(-1)
 
 	}
 
@@ -222,6 +255,7 @@ func (s UISlider) draw(dc DrawCall) {
 // AddTo adds the UI element to the given Layout.
 // The id string should be unique and is used to identify and keep track of its location and internal state, if it saves any such state.
 func (s UISlider) AddTo(layout *Layout, id string) float32 {
-	dc := layout.add(id, s, layout.newDefaultDrawcall())
+	dc := layout.newDefaultDrawcall()
+	layout.add(id, s, dc)
 	return dc.Instance.state.(*SliderState).Percentage
 }

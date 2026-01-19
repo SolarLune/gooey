@@ -6,16 +6,16 @@ import (
 
 // UIButton represents a pressable / clickable UI element. You can add graphics to it by specifying its Graphics property.
 type UIButton struct {
-	BaseColor      Color // The base color for the button.
-	HighlightColor Color // The highlight color for the Button. This color is used to draw the Button when the mouse hovers over the button or the button is highlighted using keyboard / gamepad input)
-	PressedColor   Color // The click color for the button. This color is used to draw the button when the mouse is clicking on the button
-	DisabledColor  Color
-	Toggleable     bool // When enabled, buttons are toggleable.
-	Disabled       bool
-	LayoutModifier ArrangeFunc
+	BaseColor        Color       // The base color for the button.
+	HighlightColor   Color       // The highlight color for the Button. This color is used to draw the Button when the mouse hovers over the button or the button is highlighted using keyboard / gamepad input).
+	PressedColor     Color       // The click color for the button. This color is used to draw the button when the mouse is clicking on the button.
+	DisabledColor    Color       // The disabled color for the button. Used to draw the button when disabled.
+	Toggleable       bool        // When enabled, buttons are toggleable.
+	Disabled         bool        // When enabled, buttons cannot be highlighted or pressed / toggled.
+	ArrangerModifier ArrangeFunc // A customizeable modifier that alters the location where the UI element is going to render.
 
-	Graphics UIElement
-	Pointer  *bool
+	Graphics UIElement // A UIElement object to use as a graphic.
+	Pointer  *bool     // A pointer to a variable to set when the button is pressed or toggled.
 }
 
 // NewUIButton creates a new UIButton with sensible default values for colors.
@@ -58,8 +58,8 @@ func (b UIButton) WithDisabled(disabled bool) UIButton {
 	return b
 }
 
-func (b UIButton) WithLayoutModifier(modifier ArrangeFunc) UIButton {
-	b.LayoutModifier = modifier
+func (b UIButton) WithArrangerModifier(modifier ArrangeFunc) UIButton {
+	b.ArrangerModifier = modifier
 	return b
 }
 
@@ -68,11 +68,9 @@ func (b UIButton) WithGraphics(gfx UIElement) UIButton {
 	return b
 }
 
-// Sets the text of any and all labels attached to the Button to the given string.
+// Sets the text of any and all labels already attached to the Button's graphics to the given string.
 func (b UIButton) WithText(txt string) UIButton {
-
 	setTextForAllLabelsInGraphic(b.Graphics, txt)
-
 	return b
 }
 
@@ -85,7 +83,7 @@ func (b UIButton) highlightable() bool {
 	return !b.Disabled
 }
 
-func (b UIButton) draw(dc DrawCall) {
+func (b UIButton) draw(dc *DrawCall) {
 
 	if dc.Instance.state == nil {
 		dc.Instance.state = &ButtonState{}
@@ -94,8 +92,8 @@ func (b UIButton) draw(dc DrawCall) {
 
 	state.toggleable = b.Toggleable
 
-	if b.LayoutModifier != nil {
-		dc = b.LayoutModifier(dc)
+	if b.ArrangerModifier != nil {
+		b.ArrangerModifier(dc)
 	}
 
 	buttonColor := b.BaseColor
@@ -159,7 +157,7 @@ func (b UIButton) draw(dc DrawCall) {
 
 	dc.Color = dc.Color.MultiplyRGBA(buttonColor.ToFloat32s())
 	if b.Graphics != nil {
-		dc.Instance.layout.add(dc.Instance.id+"__gfx", b.Graphics, dc)
+		dc.Instance.layout.add(dc.Instance.id+"__gfx", b.Graphics, dc.Clone())
 		dc.Instance.layout.Advance(-1)
 	}
 
@@ -177,7 +175,8 @@ func (b UIButton) draw(dc DrawCall) {
 // The id string should be unique and is used to identify and keep track of its location and internal state, if it saves any such state.
 // The function returns whether the button was pressed, or if toggleable, is currently pressed.
 func (b UIButton) AddTo(layout *Layout, id string) bool {
-	dc := layout.add(id, b, layout.newDefaultDrawcall())
+	dc := layout.newDefaultDrawcall()
+	layout.add(id, b, dc)
 	return dc.Instance.state.(*ButtonState).Pressed()
 }
 

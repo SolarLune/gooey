@@ -10,24 +10,23 @@ import (
 type StretchMode int
 
 const (
-	StretchModeFit              = iota // The element scales the smallest amount to fill the rectangle it draws in while keeping its aspect ratio
-	StretchModeStretch                 // The element stretches to fill the entire rectangle it draws in, regardless of aspect ratio
-	StretchModeFillHorizontally        // The element stretches to fill the entire rectangle it draws in horizontally, keeping its aspect ratio. If it's too tall, it simply overdraws.
-	StretchModeFillVertically          // The element stretches to fill the entire rectangle it draws in vertically, keeping its aspect ratio. If it's too wide, it simply overdraws.
-	StretchModeNinepatch               // The element is split into a ninepatch and the sides scale to fit the rectangle it draws in.
-	StretchModeThreepatch              // The element is split into a horizontal or vertical threepatch and the sides scale to fit the rectangle it draws in.
+	StretchModeFit              = iota // The drawn image scales the smallest amount to fill the rectangle it draws in while keeping its aspect ratio
+	StretchModeStretch                 // The drawn image stretches to fill the entire rectangle it draws in, regardless of aspect ratio
+	StretchModeFillHorizontally        // The drawn image stretches to fill the entire rectangle it draws in horizontally, keeping its aspect ratio. If it's too tall, it simply overdraws.
+	StretchModeFillVertically          // The drawn image stretches to fill the entire rectangle it draws in vertically, keeping its aspect ratio. If it's too wide, it simply overdraws.
+	StretchModeNinepatch               // The drawn image is split into a ninepatch and the sides scale to fit the rectangle it draws in.
+	StretchModeThreepatch              // The drawn image is split into a horizontal or vertical threepatch and the sides scale to fit the rectangle it draws in.
 )
 
 type UIImage struct {
-	Image          *ebiten.Image // The source of the image to use for drawing
-	DrawOptions    *ebiten.DrawImageOptions
-	LayoutModifier ArrangeFunc
-	Stretch        StretchMode
-	// ClipToRect     bool
+	Image            *ebiten.Image // The source of the image to use for drawing
+	DrawOptions      *ebiten.DrawImageOptions
+	ArrangerModifier ArrangeFunc // A customizeable modifier that alters the location where the UI element is going to render.
+	Stretch          StretchMode // Specifies how to stretch the UIImage.
 }
 
-func NewUIImage() UIImage {
-	return UIImage{}
+func NewUIImage(img *ebiten.Image) UIImage {
+	return UIImage{Image: img}
 }
 
 func (i UIImage) WithImage(img *ebiten.Image) UIImage {
@@ -45,8 +44,8 @@ func (i UIImage) WithStretch(stretch StretchMode) UIImage {
 	return i
 }
 
-func (i UIImage) WithLayoutModifier(layoutModifier ArrangeFunc) UIImage {
-	i.LayoutModifier = layoutModifier
+func (i UIImage) WithArrangerModifier(ArrangerModifier ArrangeFunc) UIImage {
+	i.ArrangerModifier = ArrangerModifier
 	return i
 }
 
@@ -73,10 +72,10 @@ func (i UIImage) highlightable() bool {
 	return false
 }
 
-func (i UIImage) draw(dc DrawCall) {
+func (i UIImage) draw(dc *DrawCall) {
 
-	if i.LayoutModifier != nil {
-		dc = i.LayoutModifier(dc)
+	if i.ArrangerModifier != nil {
+		i.ArrangerModifier(dc)
 	}
 
 	var drawOpt ebiten.DrawImageOptions
@@ -165,15 +164,21 @@ var verts = []ebiten.Vertex{
 }
 var indices = []uint16{0, 1, 2, 1, 2, 3}
 
+// UIImageLooping is a looping version of a UIImage, drawing a looping texture into a Layout. Useful for backgrounds.
 type UIImageLooping struct {
-	OffsetX        float32
-	OffsetY        float32
-	ScaleX         float32
-	ScaleY         float32
-	Rotation       float32
-	Image          *ebiten.Image // The source of the image to use for drawing
-	DrawOptions    *ebiten.DrawTrianglesOptions
-	LayoutModifier ArrangeFunc
+	Image            *ebiten.Image                // The source of the image to use for drawing
+	DrawOptions      *ebiten.DrawTrianglesOptions // A pointer to options to use when drawing the texture to the screen.
+	ArrangerModifier ArrangeFunc                  // A customizeable modifier that alters the location where the UI element is going to render.
+	Offset           Vector2                      // The horizontal offset of the UI image's texture.
+	Scale            Vector2                      // The horizontal scale of the UI image's texture.
+	Rotation         float32                      // The rotation (in radians) of the UI image's texture.
+}
+
+func NewUIImageLooping(img *ebiten.Image) UIImageLooping {
+	return UIImageLooping{
+		Image: img,
+		Scale: NewVector2(1, 1),
+	}
 }
 
 func (i UIImageLooping) WithImage(img *ebiten.Image) UIImageLooping {
@@ -186,8 +191,43 @@ func (i UIImageLooping) WithDrawOptions(drawOpt *ebiten.DrawTrianglesOptions) UI
 	return i
 }
 
-func (i UIImageLooping) WithLayoutModifier(layoutModifier ArrangeFunc) UIImageLooping {
-	i.LayoutModifier = layoutModifier
+func (i UIImageLooping) WithArrangerModifier(ArrangerModifier ArrangeFunc) UIImageLooping {
+	i.ArrangerModifier = ArrangerModifier
+	return i
+}
+
+func (i UIImageLooping) WithOffsetX(offsetX float32) UIImageLooping {
+	i.Offset.X = offsetX
+	return i
+}
+
+func (i UIImageLooping) WithOffsetY(offsetY float32) UIImageLooping {
+	i.Offset.Y = offsetY
+	return i
+}
+
+func (i UIImageLooping) WithOffsetVec(offset Vector2) UIImageLooping {
+	i.Offset = offset
+	return i
+}
+
+func (i UIImageLooping) WithScaleX(scaleX float32) UIImageLooping {
+	i.Scale.X = scaleX
+	return i
+}
+
+func (i UIImageLooping) WithScaleY(scaleY float32) UIImageLooping {
+	i.Scale.Y = scaleY
+	return i
+}
+
+func (i UIImageLooping) WithScaleVec(scale Vector2) UIImageLooping {
+	i.Scale = scale
+	return i
+}
+
+func (i UIImageLooping) WithRotation(rotation float32) UIImageLooping {
+	i.Rotation = rotation
 	return i
 }
 
@@ -195,10 +235,10 @@ func (i UIImageLooping) highlightable() bool {
 	return false
 }
 
-func (i UIImageLooping) draw(dc DrawCall) {
+func (i UIImageLooping) draw(dc *DrawCall) {
 
-	if i.LayoutModifier != nil {
-		dc = i.LayoutModifier(dc)
+	if i.ArrangerModifier != nil {
+		i.ArrangerModifier(dc)
 	}
 
 	var drawOpt ebiten.DrawTrianglesOptions
@@ -225,8 +265,8 @@ func (i UIImageLooping) draw(dc DrawCall) {
 	for index := 0; index < 4; index++ {
 
 		pos := Vector2{
-			(verts[index].DstX / i.ScaleX) + i.OffsetX,
-			(verts[index].DstY / i.ScaleY) + i.OffsetY,
+			(verts[index].DstX / i.Scale.X) + i.Offset.X,
+			(verts[index].DstY / i.Scale.Y) + i.Offset.Y,
 		}.Rotate(i.Rotation)
 
 		verts[index].SrcX = float32(math.Round(float64(pos.X)))

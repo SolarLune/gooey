@@ -8,8 +8,8 @@ import (
 // While any element can be placed within a Collection, if you want to
 // retrieve the state of the element or if the element needs to be
 type UICollection struct {
-	LayoutModifier ArrangeFunc
-	Elements       []UIElement
+	ArrangerModifier ArrangeFunc // A customizeable modifier that alters the location where the UI element is going to render.
+	Elements         []UIElement
 }
 
 // NewUICollection quickly creates a new UICollection out of a set of UIElements.
@@ -19,8 +19,12 @@ func NewUICollection(elements ...UIElement) UICollection {
 	}
 }
 
-func (c UICollection) WithLayoutModifier(modifier ArrangeFunc) UICollection {
-	c.LayoutModifier = modifier
+func (c *UICollection) Add(elements ...UIElement) {
+	c.Elements = append(c.Elements, elements...)
+}
+
+func (c UICollection) WithArrangerModifier(modifier ArrangeFunc) UICollection {
+	c.ArrangerModifier = modifier
 	return c
 }
 
@@ -45,14 +49,14 @@ func (c UICollection) ForAllElementsRecursive(forEach func(e UIElement) (UIEleme
 	return false
 }
 
-func (c UICollection) draw(dc DrawCall) {
+func (c UICollection) draw(dc *DrawCall) {
 
-	if c.LayoutModifier != nil {
-		dc = c.LayoutModifier(dc)
+	if c.ArrangerModifier != nil {
+		c.ArrangerModifier(dc)
 	}
 
 	for index, element := range c.Elements {
-		dc.Instance.layout.add(dc.Instance.id+"__"+strconv.Itoa(index), element, dc)
+		dc.Instance.layout.add(dc.Instance.id+"__"+strconv.Itoa(index), element, dc.Clone())
 		dc.Instance.layout.Advance(-1)
 	}
 
