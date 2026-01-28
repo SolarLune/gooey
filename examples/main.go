@@ -90,6 +90,7 @@ func NewGame() *Game {
 		g.ExampleSliders,
 		g.ExampleCustomDraw,
 		g.ExampleLayoutMap,
+		g.ExampleHighlightToggle,
 	}
 
 	return g
@@ -193,7 +194,7 @@ func (g *Game) ExampleColor(screen *ebiten.Image) {
 	l.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
 
 	// Create a Color UI element and add it to the layout.
-	flat := gooey.UIColor{Color: gooey.NewColor(1, 0, 0, 1)}
+	flat := gooey.UIColor{FillColor: gooey.NewColor(1, 0, 0, 1)}
 	flat.AddTo(l, "flat color")
 
 	g.drawtext(gooey.Texture(), 250, 0,
@@ -238,7 +239,6 @@ func (g *Game) ExampleButton(screen *ebiten.Image) {
 
 func (g *Game) ExampleButtonList(screen *ebiten.Image) {
 
-	// Define a layout for the GUI.
 	layout := gooey.NewLayout("Example Button List", 0, 0, 500, 200)
 
 	layout.SetArranger(gooey.ArrangerGrid{
@@ -605,6 +605,107 @@ func (g *Game) ExampleLayoutMap(screen *ebiten.Image) {
 		a set of strings indicating position and proportions.
 		This can be useful for creating an overall interface.
 		`)
+
+}
+
+var highlightToggleSelection = [3]int{-1, -1, -1}
+
+func (g *Game) ExampleHighlightToggle(screen *ebiten.Image) {
+
+	base := gooey.Rect{X: 0, Y: 0, W: 500, H: 200}.AlignToScreenbuffer(gooey.AlignmentCenterCenter, 0)
+
+	// Create the layouts.
+	layouts := gooey.NewLayoutsFromStrings("highlight toggle", base,
+		"aaa   cccc",
+		"aaa   cccc",
+		"aaa   cccc",
+		"bbb   cccc",
+		"bbb   cccc",
+	)
+
+	// Create the button style.
+	buttonStyle := gooey.NewUIButton().WithGraphics(
+		gooey.NewUICollection(
+
+			// Outer frame
+			gooey.UIImage{
+				Image:   g.GUIImg.SubImage(image.Rect(0, 24, 24, 48)).(*ebiten.Image),
+				Stretch: gooey.StretchModeNinepatch,
+			},
+
+			// Label
+			gooey.UILabel{
+				Alignment: gooey.AlignmentCenterCenter,
+			},
+		),
+	)
+
+	// Options A
+
+	optionsA := layouts['a']
+
+	gooey.UIColor{
+		OutlineColor:     gooey.NewColor(1, 1, 1, 1),
+		OutlineThickness: 2,
+	}.AddTo(optionsA, "bg")
+
+	// You can also use the gooey.ContainerSize constant for ArrangerGrid's ElementSize to easily do fractional scaling.
+	grid := gooey.ArrangerGrid{ElementSize: gooey.Vector2{X: 0, Y: 32}}
+
+	optionsA.SetArranger(grid.WithOuterPadding(8).WithElementSize(0, gooey.ContainerSize/4))
+
+	optionsB := layouts['b'].SetArranger(grid)
+
+	optionsC := layouts['c'].SetArranger(grid.WithElementSize(0, 32))
+
+	// A button group is a set of toggleable buttons that only has one available at a time
+	buttonGroup := gooey.UIButtonGroup{
+		BaseButton: buttonStyle,
+		// MinimumToggled: 1,
+		MaximumToggled:     1,
+		DisallowUntoggling: true,
+	}
+
+	// We create a page to indicate highlighting flow - A > B > C
+	page := gooey.NewPage(optionsA, optionsB, optionsC)
+
+	optionsAResult := buttonGroup.WithOptions("First", "Second", "Third", "Fourth").AddTo(optionsA, "menu a")
+	if optionsAResult.SelectionMade() {
+		highlightToggleSelection[0] = optionsAResult.FirstSelected()
+		page.Advance(1)
+	}
+
+	// Options B
+
+	optionsBResult := buttonGroup.WithOptions("Option A", "Option B").AddTo(optionsB, "menuoptions-b-choice a")
+	if optionsBResult.SelectionMade() {
+		highlightToggleSelection[1] = optionsBResult.FirstSelected()
+		page.Advance(1)
+	}
+
+	// Options C
+
+	for i := 0; i < 40; i++ {
+		n := strconv.Itoa(i)
+		if buttonStyle.WithText("Item #"+n).AddTo(optionsC, "menuoptions-c-item "+n) {
+			highlightToggleSelection[2] = i
+			fmt.Println("You pressed:", highlightToggleSelection[0], highlightToggleSelection[1], highlightToggleSelection[2])
+		}
+	}
+
+	// Syntactic sugar for just checking the input you're already passing earlier.
+	if gooey.InputPressedCancel() {
+		page.Advance(-1)
+		if !optionsB.HighlightingLocked {
+			optionsBResult.SetAllSelected(false)
+		} else if !optionsA.HighlightingLocked {
+			optionsAResult.SetAllSelected(false)
+		}
+	}
+
+	g.drawtext(gooey.Texture(), 250, 0,
+		`Highlighting Pages: This example shows
+how highlighting pages work.`)
 
 }
 

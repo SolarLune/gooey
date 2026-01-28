@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"sort"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -23,8 +24,9 @@ type Arranger interface {
 // UI elements using the Layout's element index, which increments as you add UI elements
 // to it.
 type Layout struct {
-	ID   string
-	Rect Rect // Rect indicates where and how large the Layout is.
+	ID                 string
+	Rect               Rect // Rect indicates where and how large the Layout is.
+	HighlightingLocked bool
 
 	AutoScrollSpeed        float32 // How smoothly to automatically scroll to the highlighted UI element for layouts that draw beyond the Layout's boundary Rect to the right and downwards.
 	AutoScrollAcceleration float32 // The acceleration to the top speed (AutoScrollSpeed) for scrolling layouts when automatically scorolling.
@@ -55,10 +57,10 @@ func NewLayout(id string, x, y, w, h float32) *Layout {
 				}
 			}
 
+			l.arranger = &ArrangerFull{}
+
 			visibleLayouts = append(visibleLayouts, l)
-			for _, d := range l.existingUIElements.Data {
-				d.wasDrawn = false
-			}
+
 			l.Reset()
 			// l.uiDrawables = l.uiDrawables[:0]
 			return l
@@ -109,16 +111,21 @@ var layoutsFromStrings = map[string]map[rune]*Layout{}
 */
 func NewLayoutsFromStrings(idBase string, baseRect Rect, mappingStrings ...string) map[rune]*Layout {
 
+	chars := []rune{}
+
 	if results, ok := layoutsFromStrings[idBase]; ok {
-		for _, l := range results {
-			NewLayout(l.ID, 0, 0, 0, 0)
+		for c := range results {
+			chars = append(chars, c)
+		}
+		// Sort for consistency
+		sort.Slice(chars, func(i, j int) bool { return chars[i] < chars[j] })
+		for _, c := range chars {
+			NewLayout(results[c].ID, 0, 0, 0, 0)
 		}
 		return results
 	}
 
 	resultingLayouts := map[rune]*Layout{}
-
-	chars := []rune{}
 
 	for _, row := range mappingStrings {
 		for _, c := range row {
@@ -138,7 +145,8 @@ func NewLayoutsFromStrings(idBase string, baseRect Rect, mappingStrings ...strin
 
 	}
 
-	// sort.Slice(chars, func(i, j int) bool { return chars[i] < chars[j] })
+	// Sort for consistency
+	sort.Slice(chars, func(i, j int) bool { return chars[i] < chars[j] })
 
 	for _, c := range chars {
 
@@ -196,6 +204,15 @@ func NewLayoutsFromStrings(idBase string, baseRect Rect, mappingStrings ...strin
 
 }
 
+func (l *Layout) Clone(newID string) *Layout {
+	n := NewLayout(newID, l.Rect.X, l.Rect.Y, l.Rect.W, l.Rect.H)
+	n.arranger = l.arranger
+	n.AutoScrollAcceleration = l.AutoScrollAcceleration
+	n.AutoScrollSpeed = l.AutoScrollSpeed
+	n.CustomHighlightingOrder = l.CustomHighlightingOrder
+	return n
+}
+
 func (l *Layout) String() string {
 	return fmt.Sprintf("%v : { %d, %d, %d, %d }", l.ID, int(l.Rect.X), int(l.Rect.Y), int(l.Rect.W), int(l.Rect.H))
 }
@@ -210,19 +227,21 @@ func (l *Layout) String() string {
 
 // AlignToScreenbuffer aligns an Area to the bounds of gooey's screenbuffer using an Alignment constant,
 // with the desired padding in pixels.
-func (l *Layout) AlignToScreenbuffer(alignment Alignment, padding float32) {
+func (l *Layout) AlignToScreenbuffer(alignment Alignment, padding float32) *Layout {
 	l.Rect = l.Rect.AlignToScreenbuffer(alignment, padding)
+	return l
 }
 
 // AlignToImage aligns an Area to the bounds of the image provided using an Alignment constant,
 // with the desired padding in pixels.
-func (l *Layout) AlignToImage(img *ebiten.Image, alignment Alignment, padding float32) {
+func (l *Layout) AlignToImage(img *ebiten.Image, alignment Alignment, padding float32) *Layout {
 	l.Rect = l.Rect.AlignToImage(img, alignment, padding)
+	return l
 }
 
 // AlignToLayout aligns a Layout to the bounds of the other Layout provided using an Alignment constant,
 // with the desired padding in pixels.
-func (l *Layout) AlignToLayout(other *Layout, alignment Alignment, padding float32) {
+func (l *Layout) AlignToLayout(other *Layout, alignment Alignment, padding float32) *Layout {
 
 	minX := other.Rect.X
 	minY := other.Rect.Y
@@ -259,6 +278,7 @@ func (l *Layout) AlignToLayout(other *Layout, alignment Alignment, padding float
 		l.Rect.Y = float32(maxY) - l.Rect.H - padding
 	}
 
+	return l
 }
 
 func (l *Layout) subscreen() *ebiten.Image {
@@ -270,6 +290,8 @@ func (l *Layout) subscreen() *ebiten.Image {
 // go back to the start.
 func (l *Layout) Reset() {
 	l.elementIndex = 0
+	l.committedMaxRect = Rect{}
+	l.currentMaxRect = Rect{}
 }
 
 // Advance advances the Layout by the element number given. You shouldn't need to call this, but can
@@ -278,8 +300,8 @@ func (l *Layout) Advance(delta int) {
 	l.elementIndex += delta
 }
 
-// ItemRect returns the current item's rectangle when transformed by the Layout's layout function.
-func (l *Layout) ItemRect(drawCall *DrawCall) {
+// itemRect returns the current item's rectangle when transformed by the Layout's layout function.
+func (l *Layout) itemRect(drawCall *DrawCall) {
 	l.arranger.Arrange(drawCall)
 	drawCall.Rect = drawCall.Rect.MoveVec(l.Offset)
 	// If the spacing rectangle isn't set, then set it to be whatever Rect is set to.
@@ -295,8 +317,11 @@ func (l *Layout) Arranger() Arranger {
 }
 
 // SetArranger sets the layout function for laying out elements in the Layout's rectangle.
+// Setting the arranger resets the maximum rectangle of drawn elements (so the Layout won't scroll).
 func (l *Layout) SetArranger(arranger Arranger) *Layout {
 	l.arranger = arranger
+	l.committedMaxRect = Rect{}
+	l.currentMaxRect = Rect{}
 	l.elementIndex = 0
 	return l
 }
@@ -335,7 +360,7 @@ func (l *Layout) add(id string, drawable UIElement, drawCall *DrawCall) {
 	// Use the layout function to position / partition the starting rectangle
 	if !drawCall.rectSet {
 		drawCall.Rect = l.Rect
-		l.ItemRect(drawCall)
+		l.itemRect(drawCall)
 		drawCall.rectSet = true
 	}
 
@@ -451,6 +476,10 @@ const (
 	ArrangeDirectionColumn                              // ArrangerGrid places elements vertically first
 )
 
+const (
+	ContainerSize float32 = -9999999999999
+)
+
 // ArrangerGrid arranges UI elements in an easily extendible grid.
 // Can be used for single columns or rows by specifying the DivisionSize
 // to be 1 or below.
@@ -460,10 +489,15 @@ type ArrangerGrid struct {
 	OuterPaddingTop    float32 // How many pixels should be given as padding between elements and the top border
 	OuterPaddingBottom float32 // How many pixels should be given as padding between elements and the bottom border
 
-	ElementPadding   Vector2 // How many pixels should be given as padding between elements
-	ElementSize      Vector2 // The size of the Elements in the Grid in pixels. If not set, it's determined from the total number of elements being drawn, arranging direction, and layout rectangle size.
-	ElementCount     int     // Number of elements per division (column or row).
-	NoCenterElements bool    // Center elements in the division if their combined size is less than the rectangle being arranged
+	ElementPadding Vector2 // How many pixels should be given as padding between elements
+
+	// The size of the Elements in the Grid in pixels.
+	// You can set any element to be the const `gooey.ContainerSize` or a percentage of it to easily
+	// set element sizes to be fractions of the container size.
+	// A size of 0 is the same as `gooey.ContainerSize`.
+	ElementSize      Vector2
+	ElementCount     int  // Number of elements per division (column or row).
+	NoCenterElements bool // Center elements in the division if their combined size is less than the rectangle being arranged
 
 	/*
 	   Whether elements increase across (RowMajor) or vertically (ColumnMajor).
@@ -490,13 +524,13 @@ type ArrangerGrid struct {
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (a ArrangerGrid) WithElementPaddingW(paddingW float32) ArrangerGrid {
+func (a ArrangerGrid) WithElementPaddingWidth(paddingW float32) ArrangerGrid {
 	a.ElementPadding.X = paddingW
 	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (a ArrangerGrid) WithElementPaddingH(paddingH float32) ArrangerGrid {
+func (a ArrangerGrid) WithElementPaddingHeight(paddingH float32) ArrangerGrid {
 	a.ElementPadding.Y = paddingH
 	return a
 }
@@ -539,14 +573,14 @@ func (a ArrangerGrid) WithOuterPaddingBottom(padding float32) ArrangerGrid {
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (a ArrangerGrid) WithOuterPaddingHorizontal(padding float32) ArrangerGrid {
+func (a ArrangerGrid) WithOuterPaddingWidth(padding float32) ArrangerGrid {
 	a.OuterPaddingLeft = padding
 	a.OuterPaddingRight = padding
 	return a
 }
 
 // Returns the ArrangerGrid with the given property set.
-func (a ArrangerGrid) WithOuterPaddingVertical(padding float32) ArrangerGrid {
+func (a ArrangerGrid) WithOuterPaddingHeight(padding float32) ArrangerGrid {
 	a.OuterPaddingTop = padding
 	a.OuterPaddingBottom = padding
 	return a
@@ -561,26 +595,38 @@ func (a ArrangerGrid) WithOuterPadding(padding float32) ArrangerGrid {
 	return a
 }
 
-// Returns the ArrangerGrid with the given property set.
+// Returns the ArrangerGrid with the size of the elements set to the given values in pixels.
+// You can set either part of the size to be the const `gooey.ContainerSize` or a percentage of it to easily
+// set element sizes to be fractions of the container size.
+// A size of 0 is the same as `gooey.ContainerSize`.
 func (a ArrangerGrid) WithElementSize(w, h float32) ArrangerGrid {
 	a.ElementSize.X = w
 	a.ElementSize.Y = h
 	return a
 }
 
-// Returns the ArrangerGrid with the given property set.
+// Returns the ArrangerGrid with the size of the elements set to the given values in pixels.
+// You can set either part of the size to be the const `gooey.ContainerSize` or a percentage of it to easily
+// set element sizes to be fractions of the container size.
+// A size of 0 is the same as `gooey.ContainerSize`.
 func (a ArrangerGrid) WithElementSizeVec(size Vector2) ArrangerGrid {
 	a.ElementSize = size
 	return a
 }
 
-// Returns the ArrangerGrid with the given property set.
+// Returns the ArrangerGrid with the size of the elements set to the given values in pixels.
+// You can set either part of the size to be the const `gooey.ContainerSize` or a percentage of it to easily
+// set element sizes to be fractions of the container size.
+// A size of 0 is the same as `gooey.ContainerSize`.
 func (a ArrangerGrid) WithElementSizeW(elementWidth float32) ArrangerGrid {
 	a.ElementSize.X = elementWidth
 	return a
 }
 
-// Returns the ArrangerGrid with the given property set.
+// Returns the ArrangerGrid with the size of the elements set to the given values in pixels.
+// You can set either part of the size to be the const `gooey.ContainerSize` or a percentage of it to easily
+// set element sizes to be fractions of the container size.
+// A size of 0 is the same as `gooey.ContainerSize`.
 func (a ArrangerGrid) WithElementSizeH(elementHeight float32) ArrangerGrid {
 	a.ElementSize.Y = elementHeight
 	return a
@@ -629,7 +675,11 @@ func (a ArrangerGrid) Arrange(drawCall *DrawCall) {
 		} else {
 			cellWidth = drawCall.Rect.W
 		}
-		a.ElementSize.X = cellWidth
+		containerMulti := float32(1)
+		if a.ElementSize.X < 0 {
+			containerMulti = a.ElementSize.X / ContainerSize
+		}
+		a.ElementSize.X = cellWidth * containerMulti
 	}
 
 	if a.ElementSize.Y > 0 {
@@ -640,7 +690,11 @@ func (a ArrangerGrid) Arrange(drawCall *DrawCall) {
 		} else {
 			cellHeight = drawCall.Rect.H
 		}
-		a.ElementSize.Y = cellHeight
+		containerMulti := float32(1)
+		if a.ElementSize.Y < 0 {
+			containerMulti = a.ElementSize.Y / ContainerSize
+		}
+		a.ElementSize.Y = cellHeight * containerMulti
 
 	}
 

@@ -93,6 +93,13 @@ func main() {
 			panic(err)
 		}
 
+		type structFind struct {
+			Start int
+			End   int
+			Name  string
+		}
+		structBounds := []structFind{}
+
 		structStart := -1
 		structEnd := -1
 		structName := ""
@@ -109,41 +116,50 @@ func main() {
 
 			}
 
-			if strings.Contains(line, "}") {
+			if strings.Contains(line, "}") && structStart >= 0 {
 				structEnd = i
 			}
 
 			if structStart > -1 && structEnd > -1 {
-				break
+				structBounds = append(structBounds, structFind{
+					Start: structStart,
+					End:   structEnd,
+					Name:  structName,
+				})
+
+				structStart = -1
+				structEnd = -1
 			}
 
 		}
 
-		fields := []TemplateField{}
+		for _, s := range structBounds {
 
-		if structStart >= 0 {
+			fields := []TemplateField{}
 
-			for _, line := range fileContents[structStart+1 : structEnd] {
+			if s.Start >= 0 {
 
-				if words := strings.Fields(line); len(words) > 0 {
+				for _, line := range fileContents[s.Start+1 : s.End] {
 
-					commentPoint := strings.Index(line, "//")
+					if words := strings.Fields(line); len(words) > 0 {
 
-					if commentPoint >= 0 && commentPoint < strings.Index(line, words[1]) {
-						continue
+						commentPoint := strings.Index(line, "//")
+
+						if commentPoint >= 0 && commentPoint < strings.Index(line, words[1]) {
+							continue
+						}
+
+						fields = append(fields, TemplateField{
+							Name: words[0],
+							Type: words[1],
+						})
 					}
 
-					fields = append(fields, TemplateField{
-						Name: words[0],
-						Type: words[1],
-					})
 				}
-
 			}
-		}
 
-		templ := template.New("applyTemplate")
-		templ.Parse(`// Apply copies the relevant non-zero elements from the other
+			templ := template.New("applyTemplate")
+			templ.Parse(`// Apply copies the relevant non-zero elements from the other
 // object into the calling object.
 func (s {{.StructName}}) Apply(other {{.StructName}}) {{.StructName}} {
 	{{range .Fields}}
@@ -152,23 +168,25 @@ func (s {{.StructName}}) Apply(other {{.StructName}}) {{.StructName}} {
 	return s
 }`)
 
-		result := new(bytes.Buffer)
+			result := new(bytes.Buffer)
 
-		input := struct {
-			StructName string
-			Fields     []TemplateField
-		}{
-			StructName: structName,
-			Fields:     fields,
+			input := struct {
+				StructName string
+				Fields     []TemplateField
+			}{
+				StructName: s.Name,
+				Fields:     fields,
+			}
+
+			err = templ.Execute(result, input)
+
+			if err != nil {
+				panic(err)
+			}
+
+			out += result.String() + "\n\n"
+
 		}
-
-		err = templ.Execute(result, input)
-
-		if err != nil {
-			panic(err)
-		}
-
-		out += result.String() + "\n\n"
 
 		return nil
 	})

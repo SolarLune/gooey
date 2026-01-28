@@ -147,14 +147,14 @@ func (b UICycleButton) draw(dc *DrawCall) {
 	}
 
 	if dc.Instance.state == nil {
-		s := &UICycleButtonState{}
+		s := &CycleButtonState{}
 		dc.Instance.state = s
 		if b.Pointer != nil {
 			s.selected = *b.Pointer
 		}
 	}
 
-	state := dc.Instance.state.(*UICycleButtonState)
+	state := dc.Instance.state.(*CycleButtonState)
 
 	color := b.BaseColor
 
@@ -349,9 +349,9 @@ func (b UICycleButton) AddTo(layout *Layout, id string) int {
 
 	dc := layout.newDefaultDrawcall()
 	layout.add(id, b, dc)
-	return dc.Instance.state.(*UICycleButtonState).selected
+	return dc.Instance.state.(*CycleButtonState).selected
 }
 
-type UICycleButtonState struct {
+type CycleButtonState struct {
 	selected int
 }

@@ -15,6 +15,10 @@ func (s UIButton) Apply(other UIButton) UIButton {
 		s.PressedColor = other.PressedColor
 	}
 
+	if !other.ToggledHighlightColor.IsZero() {
+		s.ToggledHighlightColor = other.ToggledHighlightColor
+	}
+
 	if !other.DisabledColor.IsZero() {
 		s.DisabledColor = other.DisabledColor
 	}
@@ -44,6 +48,41 @@ func (s UIButton) Apply(other UIButton) UIButton {
 
 // Apply copies the relevant non-zero elements from the other
 // object into the calling object.
+func (s UIButtonGroup) Apply(other UIButtonGroup) UIButtonGroup {
+	
+	if other.MinimumToggled != 0 {
+		s.MinimumToggled = other.MinimumToggled
+	}
+
+	if other.MaximumToggled != 0 {
+		s.MaximumToggled = other.MaximumToggled
+	}
+
+	if other.DisallowUntoggling {
+		s.DisallowUntoggling = other.DisallowUntoggling
+	}
+
+	if !other.BaseButton.IsZero() {
+		s.BaseButton = other.BaseButton
+	}
+
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
+	}
+
+	if other.Options != nil {
+		s.Options = other.Options
+	}
+
+	if other.Pointer != 0 {
+		s.Pointer = other.Pointer
+	}
+
+	return s
+}
+
+// Apply copies the relevant non-zero elements from the other
+// object into the calling object.
 func (s UICollection) Apply(other UICollection) UICollection {
 	
 	if other.ArrangerModifier != nil {
@@ -65,8 +104,16 @@ func (s UIColor) Apply(other UIColor) UIColor {
 		s.ArrangerModifier = other.ArrangerModifier
 	}
 
-	if !other.Color.IsZero() {
-		s.Color = other.Color
+	if !other.FillColor.IsZero() {
+		s.FillColor = other.FillColor
+	}
+
+	if other.OutlineThickness != 0 {
+		s.OutlineThickness = other.OutlineThickness
+	}
+
+	if !other.OutlineColor.IsZero() {
+		s.OutlineColor = other.OutlineColor
 	}
 
 	return s
@@ -180,6 +227,37 @@ func (s UIImage) Apply(other UIImage) UIImage {
 
 	if other.Stretch != 0 {
 		s.Stretch = other.Stretch
+	}
+
+	return s
+}
+
+// Apply copies the relevant non-zero elements from the other
+// object into the calling object.
+func (s UIImageLooping) Apply(other UIImageLooping) UIImageLooping {
+	
+	if other.Image != nil {
+		s.Image = other.Image
+	}
+
+	if other.DrawOptions != nil {
+		s.DrawOptions = other.DrawOptions
+	}
+
+	if other.ArrangerModifier != nil {
+		s.ArrangerModifier = other.ArrangerModifier
+	}
+
+	if !other.Offset.IsZero() {
+		s.Offset = other.Offset
+	}
+
+	if !other.Scale.IsZero() {
+		s.Scale = other.Scale
+	}
+
+	if other.Rotation != 0 {
+		s.Rotation = other.Rotation
 	}
 
 	return s

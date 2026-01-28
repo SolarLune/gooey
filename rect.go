@@ -75,6 +75,18 @@ func (r Rect) ScaleLeftTo(x float32) Rect {
 	return r
 }
 
+func (r Rect) Inset(px float32) Rect {
+	r.X += px
+	r.Y += px
+	r.W -= px * 2
+	r.H -= px * 2
+
+	r.W = clamp(r.W, 0, r.W)
+	r.H = clamp(r.H, 0, r.H)
+
+	return r
+}
+
 func (r Rect) Move(dx, dy float32) Rect {
 	r.X += dx
 	r.Y += dy
@@ -119,7 +131,7 @@ func (r Rect) AlignToRect(other Rect, alignment Alignment, padding float32) Rect
 		r.Y = float32(other.Y) + padding
 	case AlignmentTopRight:
 		r.X = float32(right) - r.W - padding
-		r.Y = float32(other.Y) - padding
+		r.Y = float32(other.Y) + padding
 	case AlignmentCenterLeft:
 		r.X = float32(other.X) + padding
 		r.Y = float32(other.Y) + float32(other.H)/2 - r.H/2

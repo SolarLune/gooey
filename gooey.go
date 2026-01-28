@@ -128,6 +128,7 @@ const (
 	queuedInputPrev   = 3
 	queuedInputNext   = -3
 	queuedInputSelect = 4
+	queuedInputCancel = -4
 )
 
 // UpdateSettings is a struct indicating boolean values used to determine how you cycle through UI elements.
@@ -143,6 +144,8 @@ type UpdateSettings struct {
 
 	UseMouse       bool // Whether or not to use the mouse for selecting and clicking UI elements
 	LeftMouseClick bool // The input to use for clicking (for rebinding)
+
+	NoRememberHighlighting bool
 
 	NoDefaultHighlightOption bool
 
@@ -213,6 +216,9 @@ func Begin(settings UpdateSettings) error {
 
 		if settings.AcceptInput {
 			queuedInput = queuedInputSelect
+		}
+		if settings.CancelInput {
+			queuedInput = queuedInputCancel
 		}
 
 		// if settings.CancelInput && !focusedUIElement {
@@ -539,46 +545,96 @@ func Begin(settings UpdateSettings) error {
 	screenBuffer.Clear()
 	prevMouseClick = updateSettings.LeftMouseClick
 
+	for _, layout := range existingLayouts {
+		for _, inst := range layout.existingUIElements.Data {
+			inst.wasDrawn = false
+		}
+	}
+
 	return nil
+}
+
+type rememberEntry struct {
+	Instance *uiElementInstance
+	Time     uint32
+}
+
+var rememberFrame = uint32(0)
+var rememberCache = []rememberEntry{}
+
+func ClearRememberCache() {
+	rememberCache = rememberCache[:0]
 }
 
 func End() {
 
 	begun = false
 
-	if (highlightedElement == nil || !highlightedElement.layout.isVisible() || !highlightedElement.wasDrawn) && (queuedInput != 0 || !updateSettings.NoDefaultHighlightOption) && !usingMouse {
-		for _, layout := range visibleLayouts {
-			found := false
+	if (highlightedElement == nil || !highlightedElement.layout.isVisible() || !highlightedElement.wasDrawn || highlightedElement.layout.HighlightingLocked) && (queuedInput != 0 || !updateSettings.NoDefaultHighlightOption) && !usingMouse {
 
-			if len(layout.CustomHighlightingOrder) > 0 {
-				for _, e := range layout.CustomHighlightingOrder {
-					element := layout.existingUIElements.Data[e]
-					if element != nil && element.drawable.highlightable() && element.wasDrawn {
-						highlightedElement = element
-						found = true
-					}
+		highlightedElement = nil
+
+		if !updateSettings.NoRememberHighlighting {
+			sort.Slice(rememberCache, func(i, j int) bool {
+				return rememberCache[i].Time > rememberCache[j].Time
+			})
+
+			for _, n := range rememberCache {
+
+				if n.Instance.wasDrawn && n.Instance.layout.isVisible() {
+					highlightedElement = n.Instance
+					break
 				}
 			}
 
-			if !found {
-
-				layout.existingUIElements.ForEach(func(element *uiElementInstance) bool {
-
-					if element.drawable.highlightable() && element.wasDrawn {
-						highlightedElement = element
-						found = true
-						return false
-					}
-					return true
-
-				})
-
-			}
-
-			if found {
-				break
-			}
 		}
+
+		if highlightedElement == nil {
+
+			for _, layout := range visibleLayouts {
+
+				found := false
+
+				if layout.HighlightingLocked {
+					continue
+				}
+
+				if len(layout.CustomHighlightingOrder) > 0 {
+					for _, e := range layout.CustomHighlightingOrder {
+						element := layout.existingUIElements.Data[e]
+						if element != nil && element.drawable.highlightable() && element.wasDrawn {
+							highlightedElement = element
+							found = true
+						}
+					}
+				}
+
+				if !found {
+
+					layout.existingUIElements.ForEach(func(element *uiElementInstance) bool {
+
+						if element.drawable.highlightable() && element.wasDrawn {
+							highlightedElement = element
+							found = true
+							return false
+						}
+						return true
+
+					})
+
+				}
+
+				// Implement remember highlighting here
+				// To do this, we need to keep track of the last highlighted element
+				// for each layout, and when looking for a new element to highlight,
+				// search through the layouts to determine if any of them were last highlighted
+				if found {
+					break
+				}
+			}
+
+		}
+
 	} else if highlightedElement != nil && queuedInput != queuedInputSelect {
 
 		currentElementRect := highlightedElement.currentRect
@@ -586,6 +642,10 @@ func End() {
 		visibleHighlightableElements := []*uiElementInstance{}
 
 		for _, layout := range visibleLayouts {
+
+			if layout.HighlightingLocked {
+				continue
+			}
 
 			layout.existingUIElements.ForEach(func(element *uiElementInstance) bool {
 
@@ -807,10 +867,66 @@ func End() {
 
 	}
 
+	if highlightedElement != nil {
+
+		found := false
+		for i := range rememberCache {
+			if rememberCache[i].Instance == highlightedElement {
+				rememberCache[i].Time = rememberFrame
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			rememberCache = append(rememberCache, rememberEntry{
+				Instance: highlightedElement,
+				Time:     rememberFrame,
+			})
+		}
+
+		// highlightedElement.layout.lastHighlightedElement = highlightedElement
+		// highlightedElement.layout.lastHighlightedTime = time.Now()
+	}
+
+	rememberFrame++
+
 }
 
 func HighlightedUIElement() *uiElementInstance {
 	return highlightedElement
+}
+
+func InputPressedUp() bool {
+	return queuedInput == queuedInputUp
+}
+
+func InputPressedDown() bool {
+	return queuedInput == queuedInputDown
+}
+
+func InputPressedRight() bool {
+	return queuedInput == queuedInputRight
+}
+
+func InputPressedLeft() bool {
+	return queuedInput == queuedInputLeft
+}
+
+func InputPressedSelect() bool {
+	return queuedInput == queuedInputSelect
+}
+
+func InputPressedCancel() bool {
+	return queuedInput == queuedInputCancel
+}
+
+func InputPressedNext() bool {
+	return queuedInput == queuedInputNext
+}
+
+func InputPressedPrev() bool {
+	return queuedInput == queuedInputPrev
 }
 
 // func keyPressed(key ebiten.Key) bool {

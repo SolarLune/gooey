@@ -53,6 +53,7 @@ type uiElementInstance struct {
 	drawable    UIElement
 	state       any
 	wasDrawn    bool
+	data        any
 }
 
 func (u *uiElementInstance) Clone() *uiElementInstance {
@@ -87,6 +88,14 @@ func (u *uiElementInstance) Rect() Rect {
 // Returns the last-drawn rectangle for the UI element on the previous game frame.
 func (u *uiElementInstance) PrevRect() Rect {
 	return u.prevRect
+}
+
+func (u *uiElementInstance) Data() any {
+	return u.data
+}
+
+func (u *uiElementInstance) SetData(data any) {
+	u.data = data
 }
 
 // func (i *uiElementInstance) Clone() *uiElementInstance {
