@@ -170,6 +170,7 @@ Here's what's currently implemented and what has yet to be done:
     - [x] Custom Draw Element
     - [x] Apply system to copy non-zero values to UI element structs
     - [ ] Radio buttons
+        - [x] Button groups (similar to radio buttons, only a certain number can be toggled at a time)
     - [ ] Dropdown menu
 - **Layout System**
     - [x] Layout modifier functions for overriding specific UI elements
@@ -183,7 +184,7 @@ Here's what's currently implemented and what has yet to be done:
     - [x] Hold input to repeat
     - [x] Custom highlighting system
         - [ ] More refinement here, maybe?
-    - [ ] Layout highlighting system to control which layouts can receive focus at any given time (e.g. you might have multiple layouts represent multiple menus that you walk through. Think of an RPG with an inventory. You might have a menu with different options like Items, Equipment, Key Items, etc. at the left, and then after making that selection, a larger list of items that you scroll through. You should have to select a menu option to view the items under that categorization, and so this would require different "levels" of highlighting.)
+    - [x] Layout highlighting system to control which layouts can receive focus at any given time (e.g. you might have multiple layouts represent multiple menus that you walk through. Think of an RPG with an inventory. You might have a menu with different options like Items, Equipment, Key Items, etc. at the left, and then after making that selection, a larger list of items that you scroll through. You should have to select a menu option to view the items under that categorization, and so this would require different "levels" of highlighting.)
 - **Scrolling system**
     - [x] Smooth linear automatic scrolling. When highlighting them, Gooey will scroll Layouts to them.
     - [ ] Fix scrolling to be more reliable / smoother
