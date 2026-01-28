@@ -696,16 +696,19 @@ func (g *Game) ExampleHighlightToggle(screen *ebiten.Image) {
 	// Syntactic sugar for just checking the input you're already passing earlier.
 	if gooey.InputPressedCancel() {
 		page.Advance(-1)
-		if !optionsB.HighlightingLocked {
-			optionsBResult.SetAllSelected(false)
-		} else if !optionsA.HighlightingLocked {
-			optionsAResult.SetAllSelected(false)
-		}
+		// if !optionsB.HighlightingLocked {
+		// 	optionsBResult.SetAllSelected(false)
+		// } else if !optionsA.HighlightingLocked {
+		// 	optionsAResult.SetAllSelected(false)
+		// }
 	}
 
 	g.drawtext(gooey.Texture(), 250, 0,
 		`Highlighting Pages: This example shows
-how highlighting pages work.`)
+how highlighting pages work. Highlighting advances through menus / layouts
+in sequence, before ending at the last one.
+
+Pressing cancel (C) goes back one menu.`)
 
 }
 

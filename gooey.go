@@ -581,7 +581,7 @@ func End() {
 
 			for _, n := range rememberCache {
 
-				if n.Instance.wasDrawn && n.Instance.layout.isVisible() {
+				if n.Instance.wasDrawn && n.Instance.layout.isVisible() && !n.Instance.layout.HighlightingLocked {
 					highlightedElement = n.Instance
 					break
 				}
