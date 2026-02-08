@@ -105,9 +105,8 @@ var layoutsFromStrings = map[string]map[rune]*Layout{}
 	 For an ID, they all have the same base ID (`idBase`) with their representative character
 	 appended (e.g. "idBase_a", "idBase_b", etc).
 
-	 Note that each Layout can only be initially created with this function once; after that, it just returns them.
-	 Also note that Layouts created through this method are cached by the idBase string, so the idBase string should not change
-	 for these specific Layouts.
+	 Note that each Layout is cached after creation with this function; after that, it just returns them, using the idBase string
+	 as the key to return them.
 */
 func NewLayoutsFromStrings(idBase string, baseRect Rect, mappingStrings ...string) map[rune]*Layout {
 
@@ -679,7 +678,12 @@ func (a ArrangerGrid) Arrange(drawCall *DrawCall) {
 		if a.ElementSize.X < 0 {
 			containerMulti = a.ElementSize.X / ContainerSize
 		}
+
 		a.ElementSize.X = cellWidth * containerMulti
+
+		if a.Direction == ArrangeDirectionRow {
+			a.ElementSize.X -= a.ElementPadding.X * float32(a.ElementCount-1)
+		}
 	}
 
 	if a.ElementSize.Y > 0 {
@@ -694,7 +698,12 @@ func (a ArrangerGrid) Arrange(drawCall *DrawCall) {
 		if a.ElementSize.Y < 0 {
 			containerMulti = a.ElementSize.Y / ContainerSize
 		}
+
 		a.ElementSize.Y = cellHeight * containerMulti
+
+		if a.Direction == ArrangeDirectionColumn {
+			a.ElementSize.Y -= a.ElementPadding.Y * float32(a.ElementCount-1)
+		}
 
 	}
 
